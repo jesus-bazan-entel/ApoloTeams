@@ -54,6 +54,7 @@ dotenvy = "0.15"
 
 # Validation
 validator = { version = "0.16", features = ["derive"] }
+regex = "1.10"
 
 # Frontend (Dioxus)
 dioxus = "0.5"
