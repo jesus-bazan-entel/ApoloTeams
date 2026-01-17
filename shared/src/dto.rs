@@ -15,7 +15,7 @@ use crate::models::{
 // Authentication DTOs
 // ============================================================================
 
-#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate, PartialEq)]
 pub struct RegisterRequest {
     #[validate(email(message = "Invalid email format"))]
     pub email: String,
@@ -27,14 +27,14 @@ pub struct RegisterRequest {
     pub password: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate, PartialEq)]
 pub struct LoginRequest {
     #[validate(email(message = "Invalid email format"))]
     pub email: String,
     pub password: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AuthResponse {
     pub access_token: String,
     pub refresh_token: String,
@@ -43,7 +43,7 @@ pub struct AuthResponse {
     pub user: UserResponse,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct RefreshTokenRequest {
     pub refresh_token: String,
 }
@@ -52,7 +52,7 @@ pub struct RefreshTokenRequest {
 // User DTOs
 // ============================================================================
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct UserResponse {
     pub id: Uuid,
     pub email: String,
@@ -65,7 +65,7 @@ pub struct UserResponse {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate, PartialEq)]
 pub struct UpdateUserRequest {
     #[validate(length(min = 1, max = 100, message = "Display name must be 1-100 characters"))]
     pub display_name: Option<String>,
@@ -75,7 +75,7 @@ pub struct UpdateUserRequest {
     pub status_message: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate, PartialEq)]
 pub struct ChangePasswordRequest {
     pub current_password: String,
     #[validate(length(min = 8, message = "Password must be at least 8 characters"))]
@@ -86,7 +86,7 @@ pub struct ChangePasswordRequest {
 // Team DTOs
 // ============================================================================
 
-#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate, PartialEq, Default)]
 pub struct CreateTeamRequest {
     #[validate(length(min = 1, max = 100, message = "Team name must be 1-100 characters"))]
     pub name: String,
@@ -95,7 +95,7 @@ pub struct CreateTeamRequest {
     pub avatar_url: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TeamResponse {
     pub id: Uuid,
     pub name: String,
@@ -106,7 +106,7 @@ pub struct TeamResponse {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate, PartialEq)]
 pub struct UpdateTeamRequest {
     #[validate(length(min = 1, max = 100, message = "Team name must be 1-100 characters"))]
     pub name: Option<String>,
@@ -115,7 +115,7 @@ pub struct UpdateTeamRequest {
     pub avatar_url: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TeamMemberResponse {
     pub id: Uuid,
     pub user: UserResponse,
@@ -123,13 +123,13 @@ pub struct TeamMemberResponse {
     pub joined_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AddTeamMemberRequest {
     pub user_id: Uuid,
     pub role: Option<TeamRole>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct UpdateTeamMemberRequest {
     pub role: TeamRole,
 }
@@ -138,7 +138,7 @@ pub struct UpdateTeamMemberRequest {
 // Channel DTOs
 // ============================================================================
 
-#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate, PartialEq, Default)]
 pub struct CreateChannelRequest {
     pub team_id: Option<Uuid>,
     #[validate(length(min = 1, max = 100, message = "Channel name must be 1-100 characters"))]
@@ -150,7 +150,7 @@ pub struct CreateChannelRequest {
     pub member_ids: Option<Vec<Uuid>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ChannelResponse {
     pub id: Uuid,
     pub team_id: Option<Uuid>,
@@ -163,7 +163,7 @@ pub struct ChannelResponse {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate, PartialEq)]
 pub struct UpdateChannelRequest {
     #[validate(length(min = 1, max = 100, message = "Channel name must be 1-100 characters"))]
     pub name: Option<String>,
@@ -171,7 +171,7 @@ pub struct UpdateChannelRequest {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ChannelMemberResponse {
     pub id: Uuid,
     pub user: UserResponse,
@@ -183,7 +183,7 @@ pub struct ChannelMemberResponse {
 // Message DTOs
 // ============================================================================
 
-#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate, PartialEq, Default)]
 pub struct SendMessageRequest {
     #[validate(length(min = 1, max = 10000, message = "Message must be 1-10000 characters"))]
     pub content: String,
@@ -192,7 +192,7 @@ pub struct SendMessageRequest {
     pub attachment_ids: Option<Vec<Uuid>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct MessageResponse {
     pub id: Uuid,
     pub channel_id: Uuid,
@@ -207,13 +207,13 @@ pub struct MessageResponse {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate, PartialEq)]
 pub struct UpdateMessageRequest {
     #[validate(length(min = 1, max = 10000, message = "Message must be 1-10000 characters"))]
     pub content: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ReactionResponse {
     pub emoji: String,
     pub count: i64,
@@ -221,7 +221,7 @@ pub struct ReactionResponse {
     pub reacted_by_me: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AddReactionRequest {
     pub emoji: String,
 }
@@ -230,7 +230,7 @@ pub struct AddReactionRequest {
 // File DTOs
 // ============================================================================
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct FileAttachmentResponse {
     pub id: Uuid,
     pub filename: String,
@@ -240,7 +240,7 @@ pub struct FileAttachmentResponse {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct UploadFileResponse {
     pub id: Uuid,
     pub filename: String,
@@ -252,13 +252,13 @@ pub struct UploadFileResponse {
 // Call DTOs
 // ============================================================================
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct StartCallRequest {
     pub channel_id: Uuid,
     pub call_type: CallType,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CallResponse {
     pub id: Uuid,
     pub channel_id: Uuid,
@@ -270,7 +270,7 @@ pub struct CallResponse {
     pub ended_at: Option<DateTime<Utc>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CallParticipantResponse {
     pub user: UserResponse,
     pub joined_at: DateTime<Utc>,
@@ -278,7 +278,7 @@ pub struct CallParticipantResponse {
     pub is_video_enabled: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct UpdateCallParticipantRequest {
     pub is_muted: Option<bool>,
     pub is_video_enabled: Option<bool>,
@@ -288,7 +288,7 @@ pub struct UpdateCallParticipantRequest {
 // WebSocket DTOs
 // ============================================================================
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "type", content = "payload")]
 pub enum WebSocketMessage {
     // Client -> Server
@@ -327,7 +327,7 @@ pub enum WebSocketMessage {
 // Notification DTOs
 // ============================================================================
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct NotificationResponse {
     pub id: Uuid,
     pub title: String,
@@ -342,7 +342,7 @@ pub struct NotificationResponse {
 // Search DTOs
 // ============================================================================
 
-#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate, PartialEq)]
 pub struct SearchRequest {
     #[validate(length(min = 1, max = 200, message = "Query must be 1-200 characters"))]
     pub query: String,
@@ -355,7 +355,7 @@ pub struct SearchRequest {
     pub offset: Option<i64>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SearchResponse {
     pub messages: Vec<MessageResponse>,
     pub total_count: i64,
@@ -365,7 +365,7 @@ pub struct SearchResponse {
 // Pagination DTOs
 // ============================================================================
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PaginationParams {
     pub limit: Option<i64>,
     pub offset: Option<i64>,
@@ -373,8 +373,8 @@ pub struct PaginationParams {
     pub after: Option<DateTime<Utc>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PaginatedResponse<T> {
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct PaginatedResponse<T: PartialEq> {
     pub items: Vec<T>,
     pub total_count: i64,
     pub has_more: bool,

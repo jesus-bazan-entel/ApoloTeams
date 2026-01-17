@@ -1,19 +1,17 @@
-//! Core domain models for Rust Teams
-//! 
-//! These models represent the core entities in the application.
+//! Domain models
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-/// User status indicating their availability
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+/// User status enum
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
 pub enum UserStatus {
-    Available,
+    Online,
+    Away,
     Busy,
     DoNotDisturb,
-    Away,
     Offline,
 }
 
@@ -23,77 +21,8 @@ impl Default for UserStatus {
     }
 }
 
-/// User role within a team
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum TeamRole {
-    Owner,
-    Admin,
-    Member,
-    Guest,
-}
-
-impl Default for TeamRole {
-    fn default() -> Self {
-        Self::Member
-    }
-}
-
-/// Channel type
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum ChannelType {
-    Public,
-    Private,
-    DirectMessage,
-}
-
-impl Default for ChannelType {
-    fn default() -> Self {
-        Self::Public
-    }
-}
-
-/// Message type
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum MessageType {
-    Text,
-    File,
-    Image,
-    Video,
-    Audio,
-    System,
-    Reply,
-}
-
-impl Default for MessageType {
-    fn default() -> Self {
-        Self::Text
-    }
-}
-
-/// Call type
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum CallType {
-    Audio,
-    Video,
-}
-
-/// Call status
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum CallStatus {
-    Ringing,
-    InProgress,
-    Ended,
-    Missed,
-    Declined,
-}
-
 /// User model
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct User {
     pub id: Uuid,
     pub email: String,
@@ -109,8 +38,83 @@ pub struct User {
     pub updated_at: DateTime<Utc>,
 }
 
+/// Team member role
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum TeamRole {
+    Owner,
+    Admin,
+    Member,
+}
+
+impl Default for TeamRole {
+    fn default() -> Self {
+        Self::Member
+    }
+}
+
+/// Channel type
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ChannelType {
+    Public,
+    Private,
+    DirectMessage,
+}
+
+impl Default for ChannelType {
+    fn default() -> Self {
+        Self::Public
+    }
+}
+
+/// Message type
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum MessageType {
+    Text,
+    Image,
+    File,
+    System,
+}
+
+impl Default for MessageType {
+    fn default() -> Self {
+        Self::Text
+    }
+}
+
+/// Call type
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum CallType {
+    Audio,
+    Video,
+}
+
+/// Call status
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum CallStatus {
+    Ringing,
+    Active,
+    Ended,
+    Missed,
+}
+
+/// Notification type
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum NotificationType {
+    Message,
+    Mention,
+    Call,
+    TeamInvite,
+    System,
+}
+
 /// Team model
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Team {
     pub id: Uuid,
     pub name: String,
@@ -121,8 +125,8 @@ pub struct Team {
     pub updated_at: DateTime<Utc>,
 }
 
-/// Team membership model
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// Team member model
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TeamMember {
     pub id: Uuid,
     pub team_id: Uuid,
@@ -132,7 +136,7 @@ pub struct TeamMember {
 }
 
 /// Channel model
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Channel {
     pub id: Uuid,
     pub team_id: Option<Uuid>,
@@ -144,8 +148,8 @@ pub struct Channel {
     pub updated_at: DateTime<Utc>,
 }
 
-/// Channel membership model
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// Channel member model
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ChannelMember {
     pub id: Uuid,
     pub channel_id: Uuid,
@@ -155,7 +159,7 @@ pub struct ChannelMember {
 }
 
 /// Message model
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Message {
     pub id: Uuid,
     pub channel_id: Uuid,
@@ -168,8 +172,8 @@ pub struct Message {
     pub updated_at: DateTime<Utc>,
 }
 
-/// Message reaction model
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// Reaction model
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Reaction {
     pub id: Uuid,
     pub message_id: Uuid,
@@ -179,7 +183,7 @@ pub struct Reaction {
 }
 
 /// File attachment model
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct FileAttachment {
     pub id: Uuid,
     pub message_id: Option<Uuid>,
@@ -193,7 +197,7 @@ pub struct FileAttachment {
 }
 
 /// Call model
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Call {
     pub id: Uuid,
     pub channel_id: Uuid,
@@ -205,7 +209,7 @@ pub struct Call {
 }
 
 /// Call participant model
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CallParticipant {
     pub id: Uuid,
     pub call_id: Uuid,
@@ -217,14 +221,24 @@ pub struct CallParticipant {
 }
 
 /// Notification model
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Notification {
     pub id: Uuid,
     pub user_id: Uuid,
     pub title: String,
     pub body: String,
-    pub notification_type: String,
-    pub reference_id: Option<Uuid>,
+    pub notification_type: NotificationType,
+    pub reference_id: Option<String>,
     pub read: bool,
+    pub created_at: DateTime<Utc>,
+}
+
+/// Refresh token model
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RefreshToken {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub token_hash: String,
+    pub expires_at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
 }

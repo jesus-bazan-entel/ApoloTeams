@@ -3,6 +3,7 @@
 use dioxus::prelude::*;
 
 use crate::state::AppState;
+use crate::Route;
 
 #[component]
 pub fn HomePage() -> Element {
@@ -12,7 +13,7 @@ pub fn HomePage() -> Element {
     // Redirect to chat if authenticated
     use_effect(move || {
         if state.read().is_authenticated() {
-            navigator.push("/chat");
+            navigator.push(Route::Chat {});
         }
     });
 
@@ -31,12 +32,12 @@ pub fn HomePage() -> Element {
                     div {
                         class: "space-x-4",
                         Link {
-                            to: "/login",
+                            to: Route::Login {},
                             class: "text-white hover:text-gray-200 transition-colors",
                             "Sign In"
                         }
                         Link {
-                            to: "/register",
+                            to: Route::Register {},
                             class: "bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition-colors",
                             "Get Started"
                         }
@@ -60,12 +61,12 @@ pub fn HomePage() -> Element {
                 div {
                     class: "space-x-4",
                     Link {
-                        to: "/register",
+                        to: Route::Register {},
                         class: "bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors inline-block",
                         "Start for Free"
                     }
                     a {
-                        href: "https://github.com/example/rust-teams",
+                        href: "https://github.com/jesus-bazan-entel/ApoloTeams",
                         class: "border-2 border-white text-white px-8 py-3 rounded-lg font-semibold text-lg hover:bg-white hover:text-blue-600 transition-colors inline-block",
                         "View on GitHub"
                     }
@@ -134,7 +135,7 @@ pub fn HomePage() -> Element {
                 p {
                     "Built with ❤️ in Rust • "
                     a {
-                        href: "https://github.com/example/rust-teams",
+                        href: "https://github.com/jesus-bazan-entel/ApoloTeams",
                         class: "hover:text-white",
                         "GitHub"
                     }

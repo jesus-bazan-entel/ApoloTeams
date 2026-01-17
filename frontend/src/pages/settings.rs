@@ -3,8 +3,9 @@
 use dioxus::prelude::*;
 
 use crate::api::ApiClient;
-use crate::components::{Avatar, Button, Input};
+use crate::components::{Avatar, Button};
 use crate::state::AppState;
+use crate::Route;
 
 #[component]
 pub fn SettingsPage() -> Element {
@@ -17,7 +18,7 @@ pub fn SettingsPage() -> Element {
         spawn(async move {
             ApiClient::logout().await;
             state.write().clear_auth();
-            navigator.push("/");
+            navigator.push(Route::Home {});
         });
     };
 
@@ -33,7 +34,7 @@ pub fn SettingsPage() -> Element {
                         class: "flex items-center justify-between",
                         h1 { class: "text-2xl font-bold", "Settings" }
                         Link {
-                            to: "/chat",
+                            to: Route::Chat {},
                             class: "text-blue-600 hover:underline",
                             "← Back to Chat"
                         }

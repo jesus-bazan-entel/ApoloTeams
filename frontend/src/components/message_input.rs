@@ -29,45 +29,39 @@ pub fn MessageInput(props: MessageInputProps) -> Element {
         props.placeholder.clone()
     };
 
-    let handle_submit = {
-        let on_send = props.on_send.clone();
-        move |e: Event<FormData>| {
+    let on_send_for_submit = props.on_send.clone();
+    let handle_submit = move |e: Event<FormData>| {
+        e.prevent_default();
+        let content = message.read().trim().to_string();
+        if !content.is_empty() {
+            if let Some(handler) = &on_send_for_submit {
+                handler.call(content);
+            }
+            message.set(String::new());
+        }
+    };
+
+    let on_typing_for_input = props.on_typing.clone();
+    let handle_input = move |e: Event<FormData>| {
+        message.set(e.value());
+        if !*is_typing.read() {
+            is_typing.set(true);
+            if let Some(handler) = &on_typing_for_input {
+                handler.call(());
+            }
+        }
+    };
+
+    let on_send_for_keydown = props.on_send.clone();
+    let handle_keydown = move |e: Event<KeyboardData>| {
+        if e.key() == Key::Enter && !e.modifiers().shift() {
             e.prevent_default();
             let content = message.read().trim().to_string();
             if !content.is_empty() {
-                if let Some(handler) = &on_send {
+                if let Some(handler) = &on_send_for_keydown {
                     handler.call(content);
                 }
                 message.set(String::new());
-            }
-        }
-    };
-
-    let handle_input = {
-        let on_typing = props.on_typing.clone();
-        move |e: Event<FormData>| {
-            message.set(e.value().clone());
-            if !*is_typing.read() {
-                is_typing.set(true);
-                if let Some(handler) = &on_typing {
-                    handler.call(());
-                }
-            }
-        }
-    };
-
-    let handle_keydown = {
-        let on_send = props.on_send.clone();
-        move |e: Event<KeyboardData>| {
-            if e.key() == Key::Enter && !e.modifiers().shift() {
-                e.prevent_default();
-                let content = message.read().trim().to_string();
-                if !content.is_empty() {
-                    if let Some(handler) = &on_send {
-                        handler.call(content);
-                    }
-                    message.set(String::new());
-                }
             }
         }
     };
@@ -118,7 +112,7 @@ pub fn MessageInput(props: MessageInputProps) -> Element {
 
                 // Send button
                 Button {
-                    r#type: "submit".to_string(),
+                    button_type: "submit".to_string(),
                     disabled: props.disabled || message.read().trim().is_empty(),
                     "Send"
                 }

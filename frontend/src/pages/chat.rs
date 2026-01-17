@@ -6,6 +6,7 @@ use shared::dto::SendMessageRequest;
 use crate::api::ApiClient;
 use crate::components::{Avatar, Button};
 use crate::state::AppState;
+use crate::Route;
 
 #[derive(Props, Clone, PartialEq)]
 pub struct ChatPageProps {
@@ -44,13 +45,14 @@ pub fn ChatPage(props: ChatPageProps) -> Element {
         }
     });
 
+    let channel_id_for_send = props.channel_id.clone();
     let send_message = move |_| {
         let content = message_input.read().clone();
         if content.trim().is_empty() {
             return;
         }
 
-        if let Some(cid) = props.channel_id.clone() {
+        if let Some(cid) = channel_id_for_send.clone() {
             spawn(async move {
                 loading.set(true);
                 let request = SendMessageRequest {
@@ -113,7 +115,7 @@ pub fn ChatPage(props: ChatPageProps) -> Element {
                         h3 { class: "text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2", "Channels" }
                         for channel in channels.iter() {
                             Link {
-                                to: "/chat/{channel.id}",
+                                to: Route::ChatChannel { channel_id: channel.id.to_string() },
                                 class: "block px-3 py-2 rounded hover:bg-gray-700 transition-colors",
                                 "# {channel.name}"
                             }
@@ -125,7 +127,7 @@ pub fn ChatPage(props: ChatPageProps) -> Element {
                 div {
                     class: "p-4 border-t border-gray-700",
                     Link {
-                        to: "/settings",
+                        to: Route::Settings {},
                         class: "block px-3 py-2 rounded hover:bg-gray-700 transition-colors text-gray-400",
                         "⚙️ Settings"
                     }

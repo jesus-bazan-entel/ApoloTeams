@@ -3,11 +3,11 @@
 use dioxus::prelude::*;
 
 use crate::components::Avatar;
-use shared::models::Message;
+use shared::dto::MessageResponse;
 
 #[derive(Props, Clone, PartialEq)]
 pub struct MessageProps {
-    pub message: Message,
+    pub message: MessageResponse,
     #[props(default)]
     pub is_own: bool,
     #[props(default)]
@@ -33,7 +33,8 @@ pub fn MessageComponent(props: MessageProps) -> Element {
             // Avatar
             if props.show_avatar {
                 Avatar {
-                    name: message.sender_id.to_string(),
+                    name: message.sender.display_name.clone(),
+                    src: message.sender.avatar_url.clone().unwrap_or_default(),
                     size: "sm".to_string(),
                 }
             } else {
@@ -49,13 +50,13 @@ pub fn MessageComponent(props: MessageProps) -> Element {
                         class: "flex items-center space-x-2 mb-1",
                         span {
                             class: "font-semibold text-sm",
-                            "User"
+                            "{message.sender.display_name}"
                         }
                         span {
                             class: "text-xs text-gray-500",
                             "{formatted_time}"
                         }
-                        if message.is_edited {
+                        if message.edited {
                             span {
                                 class: "text-xs text-gray-400",
                                 "(edited)"
@@ -80,13 +81,13 @@ pub fn MessageComponent(props: MessageProps) -> Element {
                         class: "mt-2 space-y-2",
                         for attachment in message.attachments.iter() {
                             div {
-                                key: "{attachment}",
+                                key: "{attachment.id}",
                                 class: "flex items-center space-x-2 text-sm text-blue-600",
                                 span { "📎" }
                                 a {
-                                    href: "{attachment}",
+                                    href: "{attachment.download_url}",
                                     class: "hover:underline",
-                                    "{attachment}"
+                                    "{attachment.filename}"
                                 }
                             }
                         }
@@ -97,13 +98,13 @@ pub fn MessageComponent(props: MessageProps) -> Element {
                 if !message.reactions.is_empty() {
                     div {
                         class: "mt-2 flex flex-wrap gap-1",
-                        for (emoji, count) in message.reactions.iter() {
+                        for reaction in message.reactions.iter() {
                             button {
-                                key: "{emoji}",
+                                key: "{reaction.emoji}",
                                 class: "inline-flex items-center space-x-1 px-2 py-1 bg-gray-100 rounded-full text-sm hover:bg-gray-200",
                                 onclick: {
                                     let msg_id = message.id.to_string();
-                                    let emoji = emoji.clone();
+                                    let emoji = reaction.emoji.clone();
                                     let handler = props.on_react.clone();
                                     move |_| {
                                         if let Some(h) = &handler {
@@ -111,8 +112,8 @@ pub fn MessageComponent(props: MessageProps) -> Element {
                                         }
                                     }
                                 },
-                                span { "{emoji}" }
-                                span { class: "text-gray-500", "{count}" }
+                                span { "{reaction.emoji}" }
+                                span { class: "text-gray-500", "{reaction.count}" }
                             }
                         }
                     }
@@ -151,7 +152,7 @@ pub fn MessageComponent(props: MessageProps) -> Element {
 
 #[derive(Props, Clone, PartialEq)]
 pub struct MessageListProps {
-    pub messages: Vec<Message>,
+    pub messages: Vec<MessageResponse>,
     #[props(default)]
     pub current_user_id: Option<String>,
     #[props(default)]
@@ -169,11 +170,11 @@ pub fn MessageList(props: MessageListProps) -> Element {
                 {
                     let show_avatar = i == 0 || {
                         let prev = &props.messages[i - 1];
-                        prev.sender_id != message.sender_id ||
+                        prev.sender.id != message.sender.id ||
                         (message.created_at - prev.created_at).num_minutes() > 5
                     };
                     let is_own = props.current_user_id.as_ref()
-                        .map(|id| id == &message.sender_id.to_string())
+                        .map(|id| id == &message.sender.id.to_string())
                         .unwrap_or(false);
 
                     rsx! {

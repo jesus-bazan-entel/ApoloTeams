@@ -6,6 +6,7 @@ use shared::dto::{LoginRequest, RegisterRequest};
 use crate::api::ApiClient;
 use crate::components::{Button, Input};
 use crate::state::AppState;
+use crate::Route;
 
 #[component]
 pub fn LoginPage() -> Element {
@@ -36,7 +37,7 @@ pub fn LoginPage() -> Element {
                         response.access_token,
                         response.refresh_token,
                     );
-                    navigator.push("/chat");
+                    navigator.push(Route::Chat {});
                 }
                 Err(e) => {
                     error.set(Some(e));
@@ -106,7 +107,7 @@ pub fn LoginPage() -> Element {
                         class: "text-gray-600",
                         "Don't have an account? "
                         Link {
-                            to: "/register",
+                            to: Route::Register {},
                             class: "text-blue-600 hover:underline",
                             "Sign up"
                         }
@@ -159,7 +160,7 @@ pub fn RegisterPage() -> Element {
                         response.access_token,
                         response.refresh_token,
                     );
-                    navigator.push("/chat");
+                    navigator.push(Route::Chat {});
                 }
                 Err(e) => {
                     error.set(Some(e));
@@ -253,7 +254,7 @@ pub fn RegisterPage() -> Element {
                         class: "text-gray-600",
                         "Already have an account? "
                         Link {
-                            to: "/login",
+                            to: Route::Login {},
                             class: "text-blue-600 hover:underline",
                             "Sign in"
                         }

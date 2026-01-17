@@ -4,14 +4,15 @@ use dioxus::prelude::*;
 
 use crate::components::Avatar;
 use crate::state::AppState;
-use shared::models::{Team, Channel};
+use crate::Route;
+use shared::dto::{TeamResponse, ChannelResponse};
 
 #[derive(Props, Clone, PartialEq)]
 pub struct SidebarProps {
     #[props(default)]
-    pub teams: Vec<Team>,
+    pub teams: Vec<TeamResponse>,
     #[props(default)]
-    pub channels: Vec<Channel>,
+    pub channels: Vec<ChannelResponse>,
     #[props(default)]
     pub selected_team_id: Option<String>,
     #[props(default)]
@@ -133,13 +134,13 @@ pub fn Sidebar(props: SidebarProps) -> Element {
             div {
                 class: "p-2 border-t border-gray-700",
                 Link {
-                    to: "/teams",
+                    to: Route::Home {},
                     class: "flex items-center space-x-2 px-2 py-2 rounded hover:bg-gray-800 text-gray-300",
                     span { "👥" }
                     span { "Manage Teams" }
                 }
                 Link {
-                    to: "/settings",
+                    to: Route::Settings {},
                     class: "flex items-center space-x-2 px-2 py-2 rounded hover:bg-gray-800 text-gray-300",
                     span { "⚙️" }
                     span { "Settings" }

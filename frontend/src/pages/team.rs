@@ -3,13 +3,19 @@
 use dioxus::prelude::*;
 
 use crate::api::ApiClient;
-use crate::components::{Avatar, Button, Input};
+use crate::components::{Button, Input};
 use crate::state::AppState;
+use crate::Route;
 use shared::dto::CreateTeamRequest;
 
+#[derive(Props, Clone, PartialEq)]
+pub struct TeamPageProps {
+    pub team_id: String,
+}
+
 #[component]
-pub fn TeamPage() -> Element {
-    let state = use_context::<Signal<AppState>>();
+pub fn TeamPage(props: TeamPageProps) -> Element {
+    let mut state = use_context::<Signal<AppState>>();
     let mut show_create_modal = use_signal(|| false);
     let mut team_name = use_signal(String::new);
     let mut team_description = use_signal(String::new);
@@ -38,6 +44,7 @@ pub fn TeamPage() -> Element {
                 } else {
                     Some(description)
                 },
+                avatar_url: None,
             };
 
             match ApiClient::create_team(request).await {
@@ -46,8 +53,8 @@ pub fn TeamPage() -> Element {
                     team_name.set(String::new());
                     team_description.set(String::new());
                     // Refresh teams list
-                    if let Ok(teams) = ApiClient::get_teams().await {
-                        // Update state with new teams
+                    if let Ok(teams) = ApiClient::list_teams().await {
+                        state.write().set_teams(teams);
                     }
                 }
                 Err(e) => {
@@ -76,7 +83,7 @@ pub fn TeamPage() -> Element {
                                 "Create Team"
                             }
                             Link {
-                                to: "/chat",
+                                to: Route::Chat {},
                                 class: "text-blue-600 hover:underline",
                                 "← Back to Chat"
                             }
@@ -111,7 +118,7 @@ pub fn TeamPage() -> Element {
                                 class: "flex items-center justify-between text-sm text-gray-500",
                                 span { "Created: {team.created_at.format(\"%b %d, %Y\")}" }
                                 Link {
-                                    to: "/chat",
+                                    to: Route::Chat {},
                                     class: "text-blue-600 hover:underline",
                                     "Open →"
                                 }
@@ -155,13 +162,16 @@ pub fn TeamPage() -> Element {
                         }
 
                         form {
-                            onsubmit: handle_create_team,
+                            onsubmit: move |e| {
+                                e.prevent_default();
+                                handle_create_team(());
+                            },
                             div {
                                 class: "space-y-4",
                                 Input {
                                     label: "Team Name".to_string(),
                                     value: team_name.read().clone(),
-                                    onchange: move |e: Event<FormData>| team_name.set(e.value().clone()),
+                                    onchange: move |v| team_name.set(v),
                                     placeholder: "Enter team name".to_string(),
                                     required: true,
                                 }
@@ -175,7 +185,7 @@ pub fn TeamPage() -> Element {
                                         rows: "3",
                                         placeholder: "Enter team description",
                                         value: "{team_description}",
-                                        oninput: move |e| team_description.set(e.value().clone()),
+                                        oninput: move |e| team_description.set(e.value()),
                                     }
                                 }
                             }
@@ -187,7 +197,7 @@ pub fn TeamPage() -> Element {
                                     "Cancel"
                                 }
                                 Button {
-                                    r#type: "submit".to_string(),
+                                    button_type: "submit".to_string(),
                                     disabled: *loading.read(),
                                     if *loading.read() { "Creating..." } else { "Create Team" }
                                 }

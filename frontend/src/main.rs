@@ -9,11 +9,6 @@ mod pages;
 mod state;
 mod websocket;
 
-use pages::{
-    auth::LoginPage,
-    chat::ChatPage,
-    home::HomePage,
-};
 use state::AppState;
 
 fn main() {
@@ -24,11 +19,13 @@ fn main() {
     log::info!("Starting Rust Teams frontend");
 
     // Launch the Dioxus app
-    dioxus_web::launch(App);
+    dioxus::launch(App);
 }
 
-#[derive(Clone, Routable, PartialEq)]
-enum Route {
+/// Application routes
+#[derive(Clone, Routable, Debug, PartialEq)]
+#[rustfmt::skip]
+pub enum Route {
     #[route("/")]
     Home {},
     #[route("/login")]
@@ -61,11 +58,11 @@ fn Home() -> Element {
     // Check if user is authenticated
     if state.read().is_authenticated() {
         rsx! {
-            HomePage {}
+            pages::home::HomePage {}
         }
     } else {
         rsx! {
-            LoginPage {}
+            pages::auth::LoginPage {}
         }
     }
 }
@@ -73,7 +70,7 @@ fn Home() -> Element {
 #[component]
 fn Login() -> Element {
     rsx! {
-        LoginPage {}
+        pages::auth::LoginPage {}
     }
 }
 
@@ -87,14 +84,14 @@ fn Register() -> Element {
 #[component]
 fn Chat() -> Element {
     rsx! {
-        ChatPage { channel_id: None }
+        pages::chat::ChatPage { channel_id: None }
     }
 }
 
 #[component]
 fn ChatChannel(channel_id: String) -> Element {
     rsx! {
-        ChatPage { channel_id: Some(channel_id) }
+        pages::chat::ChatPage { channel_id: Some(channel_id) }
     }
 }
 

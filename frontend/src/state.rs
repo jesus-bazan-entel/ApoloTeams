@@ -64,6 +64,18 @@ impl AppState {
         self.selected_channel_id = None;
     }
 
+    pub fn logout(&mut self) {
+        self.clear_auth();
+        // Clear from local storage
+        if let Ok(Some(storage)) = web_sys::window()
+            .and_then(|w| w.local_storage().ok())
+            .map(|s| s)
+        {
+            let _ = storage.remove_item("access_token");
+            let _ = storage.remove_item("refresh_token");
+        }
+    }
+
     pub fn set_teams(&mut self, teams: Vec<TeamResponse>) {
         self.teams = teams;
     }
