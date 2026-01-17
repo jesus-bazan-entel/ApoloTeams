@@ -41,6 +41,11 @@ async fn main() -> std::io::Result<()> {
 
     info!("Starting Rust Teams server on {}", server_addr);
 
+    // Create data directory if it doesn't exist
+    tokio::fs::create_dir_all("./data")
+        .await
+        .expect("Failed to create data directory");
+
     // Create database pool
     let pool = SqlitePoolOptions::new()
         .max_connections(config.database.max_connections)
