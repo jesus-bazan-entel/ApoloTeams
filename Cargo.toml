@@ -1,0 +1,63 @@
+[workspace]
+resolver = "2"
+members = [
+    "backend",
+    "frontend",
+    "shared",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Rust Teams Developer"]
+license = "MIT"
+repository = "https://github.com/example/rust-teams"
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+
+# Web framework
+actix-web = "4.4"
+actix-ws = "0.3"
+actix-files = "0.6"
+actix-cors = "0.7"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Database
+sqlx = { version = "0.7", features = ["runtime-tokio", "sqlite", "postgres", "uuid", "chrono"] }
+
+# Authentication
+jsonwebtoken = "9.2"
+argon2 = "0.5"
+
+# UUID
+uuid = { version = "1.6", features = ["v4", "serde"] }
+
+# Date/Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Configuration
+config = "0.14"
+dotenvy = "0.15"
+
+# Validation
+validator = { version = "0.16", features = ["derive"] }
+
+# Frontend (Dioxus)
+dioxus = "0.5"
+dioxus-web = "0.5"
+
+# Shared types
+shared = { path = "./shared" }

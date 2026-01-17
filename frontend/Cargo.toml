@@ -1,0 +1,52 @@
+[package]
+name = "frontend"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+# Workspace dependencies
+shared = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+# Dioxus
+dioxus = { workspace = true }
+dioxus-web = { workspace = true }
+
+# Additional dependencies
+gloo-net = "0.5"
+gloo-storage = "0.3"
+gloo-timers = "0.3"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = [
+    "WebSocket",
+    "MessageEvent",
+    "CloseEvent",
+    "BinaryType",
+    "Blob",
+    "FileReader",
+    "HtmlInputElement",
+    "File",
+    "FileList",
+    "FormData",
+    "MediaDevices",
+    "MediaStream",
+    "MediaStreamConstraints",
+    "Navigator",
+    "RtcPeerConnection",
+    "RtcConfiguration",
+    "RtcIceServer",
+    "RtcSessionDescriptionInit",
+    "RtcSdpType",
+    "RtcIceCandidateInit",
+] }
+js-sys = "0.3"
+futures = "0.3"
+log = "0.4"
+console_log = "1.0"
+console_error_panic_hook = "0.1"
