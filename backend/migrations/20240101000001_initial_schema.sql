@@ -15,8 +15,8 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TEXT NOT NULL
 );
 
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 
 -- Teams table
 CREATE TABLE IF NOT EXISTS teams (
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS teams (
     updated_at TEXT NOT NULL
 );
 
-CREATE INDEX idx_teams_owner ON teams(owner_id);
+CREATE INDEX IF NOT EXISTS idx_teams_owner ON teams(owner_id);
 
 -- Team members table
 CREATE TABLE IF NOT EXISTS team_members (
@@ -41,8 +41,8 @@ CREATE TABLE IF NOT EXISTS team_members (
     UNIQUE(team_id, user_id)
 );
 
-CREATE INDEX idx_team_members_team ON team_members(team_id);
-CREATE INDEX idx_team_members_user ON team_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_team_members_team ON team_members(team_id);
+CREATE INDEX IF NOT EXISTS idx_team_members_user ON team_members(user_id);
 
 -- Channels table
 CREATE TABLE IF NOT EXISTS channels (
@@ -56,8 +56,8 @@ CREATE TABLE IF NOT EXISTS channels (
     updated_at TEXT NOT NULL
 );
 
-CREATE INDEX idx_channels_team ON channels(team_id);
-CREATE INDEX idx_channels_type ON channels(channel_type);
+CREATE INDEX IF NOT EXISTS idx_channels_team ON channels(team_id);
+CREATE INDEX IF NOT EXISTS idx_channels_type ON channels(channel_type);
 
 -- Channel members table
 CREATE TABLE IF NOT EXISTS channel_members (
@@ -69,8 +69,8 @@ CREATE TABLE IF NOT EXISTS channel_members (
     UNIQUE(channel_id, user_id)
 );
 
-CREATE INDEX idx_channel_members_channel ON channel_members(channel_id);
-CREATE INDEX idx_channel_members_user ON channel_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_channel_members_channel ON channel_members(channel_id);
+CREATE INDEX IF NOT EXISTS idx_channel_members_user ON channel_members(user_id);
 
 -- Messages table
 CREATE TABLE IF NOT EXISTS messages (
@@ -85,10 +85,10 @@ CREATE TABLE IF NOT EXISTS messages (
     updated_at TEXT NOT NULL
 );
 
-CREATE INDEX idx_messages_channel ON messages(channel_id);
-CREATE INDEX idx_messages_sender ON messages(sender_id);
-CREATE INDEX idx_messages_created ON messages(created_at);
-CREATE INDEX idx_messages_reply ON messages(reply_to_id);
+CREATE INDEX IF NOT EXISTS idx_messages_channel ON messages(channel_id);
+CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_id);
+CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(created_at);
+CREATE INDEX IF NOT EXISTS idx_messages_reply ON messages(reply_to_id);
 
 -- Reactions table
 CREATE TABLE IF NOT EXISTS reactions (
@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS reactions (
     UNIQUE(message_id, user_id, emoji)
 );
 
-CREATE INDEX idx_reactions_message ON reactions(message_id);
+CREATE INDEX IF NOT EXISTS idx_reactions_message ON reactions(message_id);
 
 -- File attachments table
 CREATE TABLE IF NOT EXISTS file_attachments (
@@ -115,9 +115,9 @@ CREATE TABLE IF NOT EXISTS file_attachments (
     created_at TEXT NOT NULL
 );
 
-CREATE INDEX idx_files_message ON file_attachments(message_id);
-CREATE INDEX idx_files_channel ON file_attachments(channel_id);
-CREATE INDEX idx_files_uploader ON file_attachments(uploader_id);
+CREATE INDEX IF NOT EXISTS idx_files_message ON file_attachments(message_id);
+CREATE INDEX IF NOT EXISTS idx_files_channel ON file_attachments(channel_id);
+CREATE INDEX IF NOT EXISTS idx_files_uploader ON file_attachments(uploader_id);
 
 -- Calls table
 CREATE TABLE IF NOT EXISTS calls (
@@ -130,8 +130,8 @@ CREATE TABLE IF NOT EXISTS calls (
     ended_at TEXT
 );
 
-CREATE INDEX idx_calls_channel ON calls(channel_id);
-CREATE INDEX idx_calls_status ON calls(status);
+CREATE INDEX IF NOT EXISTS idx_calls_channel ON calls(channel_id);
+CREATE INDEX IF NOT EXISTS idx_calls_status ON calls(status);
 
 -- Call participants table
 CREATE TABLE IF NOT EXISTS call_participants (
@@ -144,8 +144,8 @@ CREATE TABLE IF NOT EXISTS call_participants (
     is_video_enabled INTEGER NOT NULL DEFAULT 0
 );
 
-CREATE INDEX idx_call_participants_call ON call_participants(call_id);
-CREATE INDEX idx_call_participants_user ON call_participants(user_id);
+CREATE INDEX IF NOT EXISTS idx_call_participants_call ON call_participants(call_id);
+CREATE INDEX IF NOT EXISTS idx_call_participants_user ON call_participants(user_id);
 
 -- Notifications table
 CREATE TABLE IF NOT EXISTS notifications (
@@ -159,9 +159,9 @@ CREATE TABLE IF NOT EXISTS notifications (
     created_at TEXT NOT NULL
 );
 
-CREATE INDEX idx_notifications_user ON notifications(user_id);
-CREATE INDEX idx_notifications_read ON notifications(read);
-CREATE INDEX idx_notifications_created ON notifications(created_at);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read);
+CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at);
 
 -- Refresh tokens table
 CREATE TABLE IF NOT EXISTS refresh_tokens (
@@ -172,5 +172,5 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
     created_at TEXT NOT NULL
 );
 
-CREATE INDEX idx_refresh_tokens_user ON refresh_tokens(user_id);
-CREATE INDEX idx_refresh_tokens_hash ON refresh_tokens(token_hash);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_hash ON refresh_tokens(token_hash);
