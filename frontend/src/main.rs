@@ -34,7 +34,7 @@ fn main() {
     }
 
     // Launch the Dioxus web app
-    dioxus::web::launch(App);
+    dioxus::launch(App);
 }
 
 /// Application routes
