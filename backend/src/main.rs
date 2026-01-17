@@ -14,7 +14,8 @@ mod config;
 mod db;
 mod error;
 mod handlers;
-mod middleware as app_middleware;
+#[path = "middleware.rs"]
+mod app_middleware;
 mod services;
 mod websocket;
 
