@@ -82,6 +82,49 @@ pub fn ChatPage(props: ChatPageProps) -> Element {
         uuid::Uuid::parse_str(cid).ok().and_then(|uuid| state.read().get_messages(&uuid).cloned())
     });
 
+    // Pre-render messages
+    let messages_view = messages.as_ref().map(|msgs| {
+        msgs.iter().map(|msg| {
+            let msg_id = msg.id.to_string();
+            let sender_name = msg.sender.display_name.clone();
+            let sender_avatar = msg.sender.avatar_url.clone().unwrap_or_default();
+            let content = msg.content.clone();
+            let time = msg.created_at.format("%H:%M").to_string();
+            rsx! {
+                div {
+                    key: "{msg_id}",
+                    class: "flex items-start space-x-3",
+                    Avatar {
+                        name: sender_name.clone(),
+                        src: sender_avatar,
+                    }
+                    div {
+                        div {
+                            class: "flex items-baseline space-x-2",
+                            span { class: "font-semibold", "{sender_name}" }
+                            span { class: "text-xs text-gray-500", "{time}" }
+                        }
+                        p { class: "text-gray-800", "{content}" }
+                    }
+                }
+            }
+        }).collect::<Vec<_>>()
+    });
+
+    // Pre-render channel links
+    let channel_links: Vec<_> = channels.iter().map(|channel| {
+        let channel_id = channel.id.to_string();
+        let channel_name = channel.name.clone();
+        rsx! {
+            Link {
+                key: "{channel_id}",
+                to: Route::ChatChannel { channel_id: channel_id },
+                class: "block px-3 py-2 rounded hover:bg-gray-700 transition-colors",
+                "# {channel_name}"
+            }
+        }
+    }).collect();
+
     rsx! {
         div {
             class: "flex h-screen bg-gray-100",
@@ -91,25 +134,22 @@ pub fn ChatPage(props: ChatPageProps) -> Element {
                 // User info
                 div {
                     class: "p-4 border-b border-gray-700",
-                    {
-                        if let Some(user) = &current_user {
-                            rsx! {
+                    match &current_user {
+                        Some(user) => rsx! {
+                            div {
+                                class: "flex items-center space-x-3",
+                                Avatar {
+                                    name: user.display_name.clone(),
+                                    src: user.avatar_url.clone().unwrap_or_default(),
+                                    online: true,
+                                }
                                 div {
-                                    class: "flex items-center space-x-3",
-                                    Avatar {
-                                        name: user.display_name.clone(),
-                                        src: user.avatar_url.clone().unwrap_or_default(),
-                                        online: true,
-                                    }
-                                    div {
-                                        p { class: "font-semibold", "{user.display_name}" }
-                                        p { class: "text-sm text-gray-400", "@{user.username}" }
-                                    }
+                                    p { class: "font-semibold", "{user.display_name}" }
+                                    p { class: "text-sm text-gray-400", "@{user.username}" }
                                 }
                             }
-                        } else {
-                            rsx! { div {} }
-                        }
+                        },
+                        None => rsx! { div {} }
                     }
                 }
 
@@ -119,14 +159,7 @@ pub fn ChatPage(props: ChatPageProps) -> Element {
                     div {
                         class: "p-4",
                         h3 { class: "text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2", "Channels" }
-                        for channel in channels.iter() {
-                            Link {
-                                key: "{channel.id}",
-                                to: Route::ChatChannel { channel_id: channel.id.to_string() },
-                                class: "block px-3 py-2 rounded hover:bg-gray-700 transition-colors",
-                                "# {channel.name}"
-                            }
-                        }
+                        {channel_links.into_iter()}
                     }
                 }
 
@@ -145,91 +178,60 @@ pub fn ChatPage(props: ChatPageProps) -> Element {
             div {
                 class: "flex-1 flex flex-col",
                 // Channel header
-                {
-                    if let Some(channel) = &selected_channel {
-                        rsx! {
-                            div {
-                                class: "h-16 bg-white border-b flex items-center px-6",
-                                h2 { class: "text-xl font-semibold", "# {channel.name}" }
-                                {
-                                    if let Some(desc) = &channel.description {
-                                        rsx! { p { class: "ml-4 text-gray-500", "{desc}" } }
-                                    } else {
-                                        rsx! { span {} }
-                                    }
-                                }
+                match &selected_channel {
+                    Some(channel) => rsx! {
+                        div {
+                            class: "h-16 bg-white border-b flex items-center px-6",
+                            h2 { class: "text-xl font-semibold", "# {channel.name}" }
+                            match &channel.description {
+                                Some(desc) => rsx! { p { class: "ml-4 text-gray-500", "{desc}" } },
+                                None => rsx! { span {} }
                             }
                         }
-                    } else {
-                        rsx! { div {} }
-                    }
+                    },
+                    None => rsx! { div {} }
                 }
 
                 // Messages area
                 div {
                     class: "flex-1 overflow-y-auto p-6 space-y-4",
-                    {
-                        if let Some(msgs) = &messages {
-                            rsx! {
-                                for msg in msgs.iter() {
-                                    div {
-                                        key: "{msg.id}",
-                                        class: "flex items-start space-x-3",
-                                        Avatar {
-                                            name: msg.sender.display_name.clone(),
-                                            src: msg.sender.avatar_url.clone().unwrap_or_default(),
-                                        }
-                                        div {
-                                            div {
-                                                class: "flex items-baseline space-x-2",
-                                                span { class: "font-semibold", "{msg.sender.display_name}" }
-                                                span { class: "text-xs text-gray-500", "{msg.created_at.format(\"%H:%M\")}" }
-                                            }
-                                            p { class: "text-gray-800", "{msg.content}" }
-                                        }
-                                    }
-                                }
-                            }
-                        } else {
-                            rsx! {
-                                div {
-                                    class: "flex items-center justify-center h-full text-gray-500",
-                                    "Select a channel to start chatting"
-                                }
+                    match &messages_view {
+                        Some(msgs) => rsx! { {msgs.iter()} },
+                        None => rsx! {
+                            div {
+                                class: "flex items-center justify-center h-full text-gray-500",
+                                "Select a channel to start chatting"
                             }
                         }
                     }
                 }
 
                 // Message input
-                {
-                    if selected_channel.is_some() {
-                        rsx! {
-                            div {
-                                class: "p-4 bg-white border-t",
-                                form {
-                                    class: "flex space-x-4",
-                                    prevent_default: "onsubmit",
-                                    onsubmit: move |_| {
-                                        send_message(());
-                                    },
-                                    input {
-                                        class: "flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500",
-                                        placeholder: "Type a message...",
-                                        value: "{message_input}",
-                                        oninput: move |e| message_input.set(e.value()),
-                                    }
-                                    Button {
-                                        button_type: "submit".to_string(),
-                                        loading: *loading.read(),
-                                        "Send"
-                                    }
+                match selected_channel.is_some() {
+                    true => rsx! {
+                        div {
+                            class: "p-4 bg-white border-t",
+                            form {
+                                class: "flex space-x-4",
+                                prevent_default: "onsubmit",
+                                onsubmit: move |_| {
+                                    send_message(());
+                                },
+                                input {
+                                    class: "flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500",
+                                    placeholder: "Type a message...",
+                                    value: "{message_input}",
+                                    oninput: move |e| message_input.set(e.value()),
+                                }
+                                Button {
+                                    button_type: "submit".to_string(),
+                                    loading: *loading.read(),
+                                    "Send"
                                 }
                             }
                         }
-                    } else {
-                        rsx! { div {} }
-                    }
+                    },
+                    false => rsx! { div {} }
                 }
             }
         }
