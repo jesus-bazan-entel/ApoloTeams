@@ -19,6 +19,20 @@ fn main() {
 
     log::info!("Starting Rust Teams frontend");
 
+    // Hide loading screen
+    #[cfg(target_arch = "wasm32")]
+    {
+        use wasm_bindgen::prelude::*;
+        
+        #[wasm_bindgen]
+        extern "C" {
+            #[wasm_bindgen(js_namespace = window)]
+            fn hideLoading();
+        }
+        
+        hideLoading();
+    }
+
     // Launch the Dioxus app
     dioxus::launch(App);
 }
