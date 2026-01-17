@@ -1,6 +1,6 @@
 //! Authentication middleware
 
-use actix_web::dev::ServiceRequest;
+use actix_web::{dev::ServiceRequest, HttpMessage};
 use shared::error::AppError;
 use std::sync::Arc;
 use uuid::Uuid;

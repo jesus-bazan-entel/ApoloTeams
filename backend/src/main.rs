@@ -4,7 +4,7 @@
 
 use actix_cors::Cors;
 use actix_files::Files;
-use actix_web::{middleware, web, App, HttpServer};
+use actix_web::{middleware as actix_middleware, web, App, HttpServer};
 use sqlx::sqlite::SqlitePoolOptions;
 use std::sync::Arc;
 use tracing::info;
@@ -78,8 +78,8 @@ async fn main() -> std::io::Result<()> {
 
         App::new()
             .wrap(cors)
-            .wrap(middleware::Logger::default())
-            .wrap(middleware::Compress::default())
+            .wrap(actix_middleware::Logger::default())
+            .wrap(actix_middleware::Compress::default())
             .app_data(web::Data::new(services.clone()))
             .app_data(web::Data::new(ws_server.clone()))
             .app_data(web::Data::new(config.clone()))
