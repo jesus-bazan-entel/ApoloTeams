@@ -13,7 +13,7 @@ pub use avatar::Avatar;
 pub use button::Button;
 pub use input::Input;
 pub use message::{MessageComponent, MessageList};
-pub use message_input::{MessageInput, TypingIndicator};
+pub use message_input::MessageInput;
 pub use modal::{AlertModal, ConfirmModal, Modal};
 pub use sidebar::Sidebar;
 pub use user_status::{StatusIndicator, StatusSelector, UserPresence};

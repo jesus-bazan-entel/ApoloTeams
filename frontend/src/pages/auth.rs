@@ -130,7 +130,7 @@ pub fn RegisterPage() -> Element {
     let mut loading = use_signal(|| false);
     let navigator = use_navigator();
 
-    let handle_register = move |_| {
+    let mut handle_register = move |_| {
         let email_val = email.read().clone();
         let username_val = username.read().clone();
         let display_name_val = display_name.read().clone();

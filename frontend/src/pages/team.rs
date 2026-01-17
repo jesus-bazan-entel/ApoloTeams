@@ -24,7 +24,7 @@ pub fn TeamPage(props: TeamPageProps) -> Element {
 
     let teams = state.read().teams.clone();
 
-    let handle_create_team = move |_| {
+    let mut handle_create_team = move |_| {
         let name = team_name.read().clone();
         let description = team_description.read().clone();
 

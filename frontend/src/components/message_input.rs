@@ -22,18 +22,14 @@ pub fn MessageInput(props: MessageInputProps) -> Element {
         props.placeholder.clone()
     };
 
-    let handle_send = {
-        let on_send = props.on_send.clone();
-        move || {
-            let content = message.read().clone();
-            if !content.trim().is_empty() {
-                on_send.call(content);
-                message.set(String::new());
-            }
+    let on_send = props.on_send.clone();
+    let mut handle_send = move || {
+        let content = message.read().clone();
+        if !content.trim().is_empty() {
+            on_send.call(content);
+            message.set(String::new());
         }
     };
-
-    let handle_send_clone = handle_send.clone();
 
     rsx! {
         div {
@@ -42,7 +38,7 @@ pub fn MessageInput(props: MessageInputProps) -> Element {
                 class: "flex items-end space-x-3",
                 prevent_default: "onsubmit",
                 onsubmit: move |_| {
-                    handle_send_clone();
+                    handle_send();
                 },
                 // Attachment button
                 button {
@@ -75,12 +71,6 @@ pub fn MessageInput(props: MessageInputProps) -> Element {
                         oninput: move |e| {
                             message.set(e.value());
                             is_typing.set(!e.value().is_empty());
-                        },
-                        onkeydown: move |e| {
-                            if e.key() == Key::Enter && !e.modifiers().shift() {
-                                // Note: In Dioxus 0.5, we handle submit via form onsubmit
-                                // The form will handle the actual submission
-                            }
                         },
                     }
 
