@@ -33,8 +33,8 @@ fn main() {
         hideLoading();
     }
 
-    // Launch the Dioxus app
-    dioxus::launch(App);
+    // Launch the Dioxus web app
+    dioxus::web::launch(App);
 }
 
 /// Application routes

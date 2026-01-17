@@ -57,8 +57,7 @@ validator = { version = "0.16", features = ["derive"] }
 regex = "1.10"
 
 # Frontend (Dioxus)
-dioxus = { version = "0.5", features = ["router"] }
-dioxus-web = "0.5"
+dioxus = { version = "0.5", features = ["router", "web"] }
 
 # Shared types
 shared = { path = "./shared" }

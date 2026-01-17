@@ -15,7 +15,6 @@ chrono = { workspace = true }
 
 # Dioxus
 dioxus = { workspace = true }
-dioxus-web = { workspace = true }
 
 # Additional dependencies
 gloo-net = "0.5"
