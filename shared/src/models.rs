@@ -5,10 +5,11 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// User status enum
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum UserStatus {
     Online,
+    Available,
     Away,
     Busy,
     DoNotDisturb,
@@ -39,7 +40,7 @@ pub struct User {
 }
 
 /// Team member role
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum TeamRole {
     Owner,
@@ -54,7 +55,7 @@ impl Default for TeamRole {
 }
 
 /// Channel type
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum ChannelType {
     Public,
@@ -69,7 +70,7 @@ impl Default for ChannelType {
 }
 
 /// Message type
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum MessageType {
     Text,
@@ -85,7 +86,7 @@ impl Default for MessageType {
 }
 
 /// Call type
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum CallType {
     Audio,
@@ -93,17 +94,19 @@ pub enum CallType {
 }
 
 /// Call status
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum CallStatus {
     Ringing,
     Active,
+    InProgress,
     Ended,
     Missed,
+    Declined,
 }
 
 /// Notification type
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum NotificationType {
     Message,
@@ -111,6 +114,33 @@ pub enum NotificationType {
     Call,
     TeamInvite,
     System,
+}
+
+impl std::fmt::Display for NotificationType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            NotificationType::Message => write!(f, "message"),
+            NotificationType::Mention => write!(f, "mention"),
+            NotificationType::Call => write!(f, "call"),
+            NotificationType::TeamInvite => write!(f, "team_invite"),
+            NotificationType::System => write!(f, "system"),
+        }
+    }
+}
+
+impl std::str::FromStr for NotificationType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "message" => Ok(NotificationType::Message),
+            "mention" => Ok(NotificationType::Mention),
+            "call" => Ok(NotificationType::Call),
+            "team_invite" | "teaminvite" => Ok(NotificationType::TeamInvite),
+            "system" => Ok(NotificationType::System),
+            _ => Err(format!("Unknown notification type: {}", s)),
+        }
+    }
 }
 
 /// Team model

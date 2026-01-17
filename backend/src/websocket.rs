@@ -4,7 +4,7 @@ use actix_web::{web, HttpRequest, HttpResponse};
 use actix_ws::Message;
 use dashmap::DashMap;
 use futures_util::StreamExt;
-use shared::dto::{MessageResponse, UserResponse, WebSocketMessage};
+use shared::dto::WebSocketMessage;
 use shared::models::UserStatus;
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -36,7 +36,7 @@ impl WebSocketServer {
     pub fn register(&self, user_id: Uuid) -> broadcast::Receiver<String> {
         let (tx, rx) = broadcast::channel(100);
         self.connections.insert(user_id, tx);
-        self.user_statuses.insert(user_id, UserStatus::Available);
+        self.user_statuses.insert(user_id, UserStatus::Online);
         rx
     }
 
@@ -114,7 +114,7 @@ impl WebSocketServer {
 
     /// Get user status
     pub fn get_user_status(&self, user_id: &Uuid) -> UserStatus {
-        self.user_statuses.get(user_id).map(|s| *s).unwrap_or(UserStatus::Offline)
+        self.user_statuses.get(user_id).map(|s| s.clone()).unwrap_or(UserStatus::Offline)
     }
 
     /// Get online users in a channel
@@ -147,7 +147,7 @@ pub async fn ws_handler(
     // Spawn WebSocket handler task
     actix_rt::spawn(async move {
         let mut user_id: Option<Uuid> = None;
-        let mut receiver: Option<broadcast::Receiver<String>> = None;
+        let mut _receiver: Option<broadcast::Receiver<String>> = None;
 
         while let Some(Ok(msg)) = msg_stream.next().await {
             match msg {
@@ -161,7 +161,7 @@ pub async fn ws_handler(
                             match services.auth.verify_access_token(&token) {
                                 Ok(uid) => {
                                     user_id = Some(uid);
-                                    receiver = Some(ws_server.register(uid));
+                                    let receiver = ws_server.register(uid);
 
                                     // Get user info
                                     if let Ok(user) = services.users.get_user(&uid).await {
@@ -172,16 +172,15 @@ pub async fn ws_handler(
                                     }
 
                                     // Start listening for broadcasts
-                                    if let Some(mut rx) = receiver.take() {
-                                        let mut session_clone = session.clone();
-                                        actix_rt::spawn(async move {
-                                            while let Ok(msg) = rx.recv().await {
-                                                if session_clone.text(msg).await.is_err() {
-                                                    break;
-                                                }
+                                    let mut rx = receiver;
+                                    let mut session_clone = session.clone();
+                                    actix_rt::spawn(async move {
+                                        while let Ok(msg) = rx.recv().await {
+                                            if session_clone.text(msg).await.is_err() {
+                                                break;
                                             }
-                                        });
-                                    }
+                                        }
+                                    });
                                 }
                                 Err(e) => {
                                     let error = WebSocketMessage::Error {
@@ -282,17 +281,17 @@ pub async fn ws_handler(
                             }
                         }
 
-                        // WebRTC signaling
-                        Ok(WebSocketMessage::WebRTCOffer { call_id, from_user_id, sdp }) => {
+                        // WebRTC signaling - placeholders for now
+                        Ok(WebSocketMessage::WebRTCOffer { call_id: _, from_user_id: _, sdp: _ }) => {
                             // Forward to all participants in the call
                             // This would need call participant lookup
                         }
 
-                        Ok(WebSocketMessage::WebRTCAnswer { call_id, from_user_id, sdp }) => {
+                        Ok(WebSocketMessage::WebRTCAnswer { call_id: _, from_user_id: _, sdp: _ }) => {
                             // Forward to the caller
                         }
 
-                        Ok(WebSocketMessage::WebRTCIceCandidate { call_id, from_user_id, candidate }) => {
+                        Ok(WebSocketMessage::WebRTCIceCandidate { call_id: _, from_user_id: _, candidate: _ }) => {
                             // Forward to all participants
                         }
 

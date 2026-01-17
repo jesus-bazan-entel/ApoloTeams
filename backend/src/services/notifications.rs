@@ -40,8 +40,8 @@ impl NotificationService {
             id: notification.id,
             title: notification.title,
             body: notification.body,
-            notification_type: notification.notification_type,
-            reference_id: notification.reference_id,
+            notification_type: notification.notification_type.to_string(),
+            reference_id: notification.reference_id.and_then(|s| Uuid::parse_str(&s).ok()),
             read: notification.read,
             created_at: notification.created_at,
         })
@@ -70,8 +70,8 @@ impl NotificationService {
                 id: n.id,
                 title: n.title,
                 body: n.body,
-                notification_type: n.notification_type,
-                reference_id: n.reference_id,
+                notification_type: n.notification_type.to_string(),
+                reference_id: n.reference_id.and_then(|s| Uuid::parse_str(&s).ok()),
                 read: n.read,
                 created_at: n.created_at,
             })

@@ -18,7 +18,7 @@ pub async fn start_call(
 
     let call = services
         .calls
-        .start_call(&body.channel_id, &user_id, body.call_type)
+        .start_call(&body.channel_id, &user_id, body.call_type.clone())
         .await?;
 
     Ok(HttpResponse::Created().json(call))

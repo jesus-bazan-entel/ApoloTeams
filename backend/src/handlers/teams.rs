@@ -110,7 +110,7 @@ pub async fn add_team_member(
 
     let member = services
         .teams
-        .add_member(&team_id, &user_id, &body.user_id, body.role)
+        .add_member(&team_id, &user_id, &body.user_id, body.role.clone())
         .await?;
     Ok(HttpResponse::Created().json(member))
 }
@@ -132,7 +132,7 @@ pub async fn update_team_member(
 
     let member = services
         .teams
-        .update_member_role(&params.team_id, &requester_id, &params.user_id, body.role)
+        .update_member_role(&params.team_id, &requester_id, &params.user_id, body.role.clone())
         .await?;
     Ok(HttpResponse::Ok().json(member))
 }

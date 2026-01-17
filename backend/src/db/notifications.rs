@@ -1,7 +1,7 @@
 //! Notification database operations
 
 use chrono::{DateTime, Utc};
-use shared::models::Notification;
+use shared::models::{Notification, NotificationType};
 use sqlx::{FromRow, SqlitePool};
 use uuid::Uuid;
 
@@ -24,8 +24,8 @@ impl From<NotificationRow> for Notification {
             user_id: Uuid::parse_str(&row.user_id).unwrap_or_default(),
             title: row.title,
             body: row.body,
-            notification_type: row.notification_type,
-            reference_id: row.reference_id.and_then(|s| Uuid::parse_str(&s).ok()),
+            notification_type: row.notification_type.parse().unwrap_or(NotificationType::System),
+            reference_id: row.reference_id,
             read: row.read,
             created_at: DateTime::parse_from_rfc3339(&row.created_at).unwrap().with_timezone(&Utc),
         }
