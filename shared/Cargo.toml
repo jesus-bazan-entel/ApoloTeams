@@ -5,6 +5,10 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 
+[features]
+default = []
+wasm = ["uuid/js"]
+
 [dependencies]
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -13,3 +17,6 @@ chrono = { workspace = true }
 validator = { workspace = true }
 thiserror = { workspace = true }
 regex = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+uuid = { version = "1.6", features = ["v4", "serde", "js"] }
