@@ -48,7 +48,7 @@ impl AppConfig {
             },
             database: DatabaseConfig {
                 url: env::var("DATABASE_URL")
-                    .unwrap_or_else(|_| "sqlite:./data/rust_teams.db?mode=rwc".to_string()),
+                    .unwrap_or_else(|_| "sqlite:./data/rust_teams.db?mode=rwc&create=true".to_string()),
                 max_connections: env::var("DATABASE_MAX_CONNECTIONS")
                     .unwrap_or_else(|_| "5".to_string())
                     .parse()
