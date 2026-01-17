@@ -4,7 +4,7 @@
 
 use actix_cors::Cors;
 use actix_files::Files;
-use actix_web::{middleware as actix_middleware, web, App, HttpServer};
+use actix_web::{middleware as actix_middleware, web, App, HttpServer, HttpResponse};
 use sqlx::sqlite::SqlitePoolOptions;
 use std::sync::Arc;
 use tracing::info;
@@ -21,6 +21,11 @@ mod websocket;
 use crate::config::AppConfig;
 use crate::services::Services;
 use crate::websocket::WebSocketServer;
+
+/// Serve index.html for SPA routing
+async fn spa_index() -> actix_web::Result<actix_files::NamedFile> {
+    Ok(actix_files::NamedFile::open("./static/index.html")?)
+}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -45,6 +50,11 @@ async fn main() -> std::io::Result<()> {
     tokio::fs::create_dir_all("./data")
         .await
         .expect("Failed to create data directory");
+
+    // Create static directory if it doesn't exist
+    tokio::fs::create_dir_all("./static")
+        .await
+        .expect("Failed to create static directory");
 
     // Create database pool
     let pool = SqlitePoolOptions::new()
@@ -71,6 +81,10 @@ async fn main() -> std::io::Result<()> {
     tokio::fs::create_dir_all(&config.storage.upload_path)
         .await
         .expect("Failed to create upload directory");
+
+    info!("Server ready at http://{}", server_addr);
+    info!("Frontend available at http://{}/", server_addr);
+    info!("API available at http://{}/api/v1", server_addr);
 
     // Start HTTP server
     HttpServer::new(move || {
@@ -179,6 +193,12 @@ async fn main() -> std::io::Result<()> {
             .route("/ws", web::get().to(websocket::ws_handler))
             // Static files for uploads
             .service(Files::new("/uploads", &config.storage.upload_path))
+            // Serve frontend static files (must be last)
+            .service(
+                Files::new("/", "./static")
+                    .index_file("index.html")
+                    .default_handler(web::get().to(spa_index))
+            )
     })
     .bind(&server_addr)?
     .run()
