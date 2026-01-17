@@ -15,6 +15,7 @@ pub struct StatusIndicatorProps {
 pub fn StatusIndicator(props: StatusIndicatorProps) -> Element {
     let (color, title) = match props.status {
         UserStatus::Online => ("bg-green-500", "Online"),
+        UserStatus::Available => ("bg-green-400", "Available"),
         UserStatus::Away => ("bg-yellow-500", "Away"),
         UserStatus::Busy => ("bg-red-500", "Busy"),
         UserStatus::DoNotDisturb => ("bg-red-600", "Do Not Disturb"),
@@ -48,6 +49,7 @@ pub fn StatusSelector(props: StatusSelectorProps) -> Element {
 
     let statuses = vec![
         (UserStatus::Online, "Online", "bg-green-500"),
+        (UserStatus::Available, "Available", "bg-green-400"),
         (UserStatus::Away, "Away", "bg-yellow-500"),
         (UserStatus::Busy, "Busy", "bg-red-500"),
         (UserStatus::DoNotDisturb, "Do Not Disturb", "bg-red-600"),
