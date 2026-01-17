@@ -2,20 +2,13 @@
 
 use dioxus::prelude::*;
 
-use crate::components::Button;
-
 #[derive(Props, Clone, PartialEq)]
 pub struct MessageInputProps {
     #[props(default)]
     pub placeholder: String,
+    pub on_send: EventHandler<String>,
     #[props(default)]
     pub disabled: bool,
-    #[props(default)]
-    pub on_send: Option<EventHandler<String>>,
-    #[props(default)]
-    pub on_typing: Option<EventHandler<()>>,
-    #[props(default)]
-    pub on_file_attach: Option<EventHandler<()>>,
 }
 
 #[component]
@@ -29,76 +22,74 @@ pub fn MessageInput(props: MessageInputProps) -> Element {
         props.placeholder.clone()
     };
 
-    let on_send_for_submit = props.on_send.clone();
-    let handle_submit = move |e: Event<FormData>| {
-        e.prevent_default();
-        let content = message.read().trim().to_string();
-        if !content.is_empty() {
-            if let Some(handler) = &on_send_for_submit {
-                handler.call(content);
-            }
-            message.set(String::new());
-        }
-    };
-
-    let on_typing_for_input = props.on_typing.clone();
-    let handle_input = move |e: Event<FormData>| {
-        message.set(e.value());
-        if !*is_typing.read() {
-            is_typing.set(true);
-            if let Some(handler) = &on_typing_for_input {
-                handler.call(());
-            }
-        }
-    };
-
-    let on_send_for_keydown = props.on_send.clone();
-    let handle_keydown = move |e: Event<KeyboardData>| {
-        if e.key() == Key::Enter && !e.modifiers().shift() {
-            e.prevent_default();
-            let content = message.read().trim().to_string();
-            if !content.is_empty() {
-                if let Some(handler) = &on_send_for_keydown {
-                    handler.call(content);
-                }
+    let handle_send = {
+        let on_send = props.on_send.clone();
+        move || {
+            let content = message.read().clone();
+            if !content.trim().is_empty() {
+                on_send.call(content);
                 message.set(String::new());
             }
         }
     };
 
+    let handle_send_clone = handle_send.clone();
+
     rsx! {
         div {
             class: "border-t bg-white p-4",
             form {
-                onsubmit: handle_submit,
                 class: "flex items-end space-x-3",
+                prevent_default: "onsubmit",
+                onsubmit: move |_| {
+                    handle_send_clone();
+                },
                 // Attachment button
                 button {
                     r#type: "button",
                     class: "p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors",
                     title: "Attach file",
-                    onclick: {
-                        let handler = props.on_file_attach.clone();
-                        move |_| {
-                            if let Some(h) = &handler {
-                                h.call(());
-                            }
+                    svg {
+                        class: "w-5 h-5",
+                        fill: "none",
+                        stroke: "currentColor",
+                        view_box: "0 0 24 24",
+                        path {
+                            stroke_linecap: "round",
+                            stroke_linejoin: "round",
+                            stroke_width: "2",
+                            d: "M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
                         }
-                    },
-                    "📎"
+                    }
                 }
 
-                // Message input
+                // Message input area
                 div {
-                    class: "flex-1",
+                    class: "flex-1 relative",
                     textarea {
                         class: "w-full px-4 py-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
                         placeholder: "{placeholder}",
                         rows: "1",
                         disabled: props.disabled,
                         value: "{message}",
-                        oninput: handle_input,
-                        onkeydown: handle_keydown,
+                        oninput: move |e| {
+                            message.set(e.value());
+                            is_typing.set(!e.value().is_empty());
+                        },
+                        onkeydown: move |e| {
+                            if e.key() == Key::Enter && !e.modifiers().shift() {
+                                // Note: In Dioxus 0.5, we handle submit via form onsubmit
+                                // The form will handle the actual submission
+                            }
+                        },
+                    }
+
+                    // Typing indicator
+                    if *is_typing.read() {
+                        div {
+                            class: "absolute -top-6 left-0 text-xs text-gray-500",
+                            "Typing..."
+                        }
                     }
                 }
 
@@ -107,42 +98,48 @@ pub fn MessageInput(props: MessageInputProps) -> Element {
                     r#type: "button",
                     class: "p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors",
                     title: "Add emoji",
-                    "😀"
+                    svg {
+                        class: "w-5 h-5",
+                        fill: "none",
+                        stroke: "currentColor",
+                        view_box: "0 0 24 24",
+                        path {
+                            stroke_linecap: "round",
+                            stroke_linejoin: "round",
+                            stroke_width: "2",
+                            d: "M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        }
+                    }
                 }
 
                 // Send button
-                Button {
-                    button_type: "submit".to_string(),
+                button {
+                    r#type: "submit",
+                    class: "p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                     disabled: props.disabled || message.read().trim().is_empty(),
-                    "Send"
+                    title: "Send message",
+                    svg {
+                        class: "w-5 h-5",
+                        fill: "none",
+                        stroke: "currentColor",
+                        view_box: "0 0 24 24",
+                        path {
+                            stroke_linecap: "round",
+                            stroke_linejoin: "round",
+                            stroke_width: "2",
+                            d: "M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                        }
+                    }
                 }
             }
-        }
-    }
-}
 
-#[derive(Props, Clone, PartialEq)]
-pub struct TypingIndicatorProps {
-    #[props(default)]
-    pub users: Vec<String>,
-}
-
-#[component]
-pub fn TypingIndicator(props: TypingIndicatorProps) -> Element {
-    if props.users.is_empty() {
-        return rsx! {};
-    }
-
-    let text = match props.users.len() {
-        1 => format!("{} is typing...", props.users[0]),
-        2 => format!("{} and {} are typing...", props.users[0], props.users[1]),
-        _ => format!("{} and {} others are typing...", props.users[0], props.users.len() - 1),
-    };
-
-    rsx! {
-        div {
-            class: "px-4 py-2 text-sm text-gray-500 italic",
-            "{text}"
+            // Character count (optional, for long messages)
+            if message.read().len() > 500 {
+                div {
+                    class: "text-xs text-gray-500 mt-1 text-right",
+                    "{message.read().len()} / 4000"
+                }
+            }
         }
     }
 }

@@ -9,6 +9,7 @@ mod pages;
 mod state;
 mod websocket;
 
+use pages::{LoginPage, RegisterPage, HomePage, ChatPage, TeamPage, SettingsPage};
 use state::AppState;
 
 fn main() {
@@ -58,11 +59,11 @@ fn Home() -> Element {
     // Check if user is authenticated
     if state.read().is_authenticated() {
         rsx! {
-            pages::home::HomePage {}
+            HomePage {}
         }
     } else {
         rsx! {
-            pages::auth::LoginPage {}
+            LoginPage {}
         }
     }
 }
@@ -70,41 +71,41 @@ fn Home() -> Element {
 #[component]
 fn Login() -> Element {
     rsx! {
-        pages::auth::LoginPage {}
+        LoginPage {}
     }
 }
 
 #[component]
 fn Register() -> Element {
     rsx! {
-        pages::auth::RegisterPage {}
+        RegisterPage {}
     }
 }
 
 #[component]
 fn Chat() -> Element {
     rsx! {
-        pages::chat::ChatPage { channel_id: None }
+        ChatPage { channel_id: None }
     }
 }
 
 #[component]
 fn ChatChannel(channel_id: String) -> Element {
     rsx! {
-        pages::chat::ChatPage { channel_id: Some(channel_id) }
+        ChatPage { channel_id: Some(channel_id) }
     }
 }
 
 #[component]
 fn Team(team_id: String) -> Element {
     rsx! {
-        pages::team::TeamPage { team_id }
+        TeamPage { team_id }
     }
 }
 
 #[component]
 fn Settings() -> Element {
     rsx! {
-        pages::settings::SettingsPage {}
+        SettingsPage {}
     }
 }

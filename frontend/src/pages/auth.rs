@@ -74,8 +74,8 @@ pub fn LoginPage() -> Element {
 
                 form {
                     class: "space-y-4",
-                    onsubmit: move |e| {
-                        e.prevent_default();
+                    prevent_default: "onsubmit",
+                    onsubmit: move |_| {
                         handle_login(());
                     },
                     Input {
@@ -197,8 +197,8 @@ pub fn RegisterPage() -> Element {
 
                 form {
                     class: "space-y-4",
-                    onsubmit: move |e| {
-                        e.prevent_default();
+                    prevent_default: "onsubmit",
+                    onsubmit: move |_| {
                         handle_register(());
                     },
                     Input {

@@ -7,17 +7,20 @@ use shared::dto::UserResponse;
 /// Hook to get the current authenticated user
 pub fn use_current_user() -> Option<UserResponse> {
     let state = use_context::<Signal<AppState>>();
-    state.read().current_user.clone()
+    let result = state.read().current_user.clone();
+    result
 }
 
 /// Hook to check if user is authenticated
 pub fn use_is_authenticated() -> bool {
     let state = use_context::<Signal<AppState>>();
-    state.read().is_authenticated()
+    let result = state.read().is_authenticated();
+    result
 }
 
 /// Hook to get the auth token
 pub fn use_auth_token() -> Option<String> {
     let state = use_context::<Signal<AppState>>();
-    state.read().access_token.clone()
+    let result = state.read().access_token.clone();
+    result
 }

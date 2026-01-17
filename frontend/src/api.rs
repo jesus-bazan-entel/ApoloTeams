@@ -35,7 +35,7 @@ impl ApiClient {
     ) -> Result<T, String> {
         let url = format!("{}{}", API_BASE_URL, path);
 
-        let mut request = match method {
+        let request = match method {
             "GET" => Request::get(&url),
             "POST" => Request::post(&url),
             "PUT" => Request::put(&url),
@@ -44,19 +44,27 @@ impl ApiClient {
             _ => return Err("Invalid HTTP method".to_string()),
         };
 
-        if auth {
+        let mut request = if auth {
             if let Some(token) = Self::get_token() {
-                request = request.header("Authorization", &format!("Bearer {}", token));
+                request.header("Authorization", &format!("Bearer {}", token))
+            } else {
+                request
             }
-        }
+        } else {
+            request
+        };
 
-        if let Some(body) = body {
-            request = request
+        let response = if let Some(body) = body {
+            request
                 .header("Content-Type", "application/json")
-                .body(serde_json::to_string(&body).map_err(|e| e.to_string())?);
-        }
-
-        let response = request.send().await.map_err(|e| e.to_string())?;
+                .body(serde_json::to_string(&body).map_err(|e| e.to_string())?)
+                .map_err(|e| e.to_string())?
+                .send()
+                .await
+                .map_err(|e| e.to_string())?
+        } else {
+            request.send().await.map_err(|e| e.to_string())?
+        };
 
         if response.ok() {
             response.json::<T>().await.map_err(|e| e.to_string())

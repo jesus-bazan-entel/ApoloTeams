@@ -65,7 +65,10 @@ pub fn StatusSelector(props: StatusSelectorProps) -> Element {
             // Current status button
             button {
                 class: "flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors",
-                onclick: move |_| is_open.set(!*is_open.read()),
+                onclick: move |_| {
+                    let current_value = *is_open.read();
+                    is_open.set(!current_value);
+                },
                 span {
                     class: "w-3 h-3 {current.2} rounded-full",
                 }

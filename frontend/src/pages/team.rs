@@ -162,8 +162,8 @@ pub fn TeamPage(props: TeamPageProps) -> Element {
                         }
 
                         form {
-                            onsubmit: move |e| {
-                                e.prevent_default();
+                            prevent_default: "onsubmit",
+                            onsubmit: move |_| {
                                 handle_create_team(());
                             },
                             div {

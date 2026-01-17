@@ -154,6 +154,7 @@ pub fn ChatPage(props: ChatPageProps) -> Element {
                     if let Some(msgs) = &messages {
                         for msg in msgs.iter() {
                             div {
+                                key: "{msg.id}",
                                 class: "flex items-start space-x-3",
                                 Avatar {
                                     name: msg.sender.display_name.clone(),
@@ -183,8 +184,8 @@ pub fn ChatPage(props: ChatPageProps) -> Element {
                         class: "p-4 bg-white border-t",
                         form {
                             class: "flex space-x-4",
-                            onsubmit: move |e| {
-                                e.prevent_default();
+                            prevent_default: "onsubmit",
+                            onsubmit: move |_| {
                                 send_message(());
                             },
                             input {

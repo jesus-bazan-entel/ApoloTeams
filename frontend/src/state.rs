@@ -1,9 +1,13 @@
 //! Application state management
 
+use gloo_storage::{LocalStorage, Storage};
 use shared::dto::{ChannelResponse, MessageResponse, TeamResponse, UserResponse};
 use shared::models::UserStatus;
 use std::collections::HashMap;
 use uuid::Uuid;
+
+const TOKEN_KEY: &str = "rust_teams_token";
+const REFRESH_TOKEN_KEY: &str = "rust_teams_refresh_token";
 
 /// Global application state
 #[derive(Clone, Default)]
@@ -49,8 +53,11 @@ impl AppState {
 
     pub fn set_auth(&mut self, user: UserResponse, access_token: String, refresh_token: String) {
         self.current_user = Some(user);
-        self.access_token = Some(access_token);
-        self.refresh_token = Some(refresh_token);
+        self.access_token = Some(access_token.clone());
+        self.refresh_token = Some(refresh_token.clone());
+        // Save to local storage
+        let _ = LocalStorage::set(TOKEN_KEY, access_token);
+        let _ = LocalStorage::set(REFRESH_TOKEN_KEY, refresh_token);
     }
 
     pub fn clear_auth(&mut self) {
@@ -62,18 +69,13 @@ impl AppState {
         self.messages.clear();
         self.selected_team_id = None;
         self.selected_channel_id = None;
+        // Clear from local storage
+        LocalStorage::delete(TOKEN_KEY);
+        LocalStorage::delete(REFRESH_TOKEN_KEY);
     }
 
     pub fn logout(&mut self) {
         self.clear_auth();
-        // Clear from local storage
-        if let Ok(Some(storage)) = web_sys::window()
-            .and_then(|w| w.local_storage().ok())
-            .map(|s| s)
-        {
-            let _ = storage.remove_item("access_token");
-            let _ = storage.remove_item("refresh_token");
-        }
     }
 
     pub fn set_teams(&mut self, teams: Vec<TeamResponse>) {
