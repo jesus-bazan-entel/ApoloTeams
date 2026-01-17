@@ -1,6 +1,6 @@
 //! Authentication middleware
 
-use actix_web::{dev::ServiceRequest, Error, HttpMessage};
+use actix_web::dev::ServiceRequest;
 use shared::error::AppError;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -30,7 +30,7 @@ pub trait RequestExt {
     fn user_id(&self) -> Option<Uuid>;
 }
 
-impl<T> RequestExt for actix_web::HttpRequest {
+impl RequestExt for actix_web::HttpRequest {
     fn user_id(&self) -> Option<Uuid> {
         self.extensions().get::<Uuid>().copied()
     }
