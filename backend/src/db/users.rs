@@ -2,7 +2,7 @@
 
 use chrono::{DateTime, Utc};
 use shared::models::{User, UserStatus};
-use sqlx::{FromRow, SqlitePool};
+use sqlx::{FromRow, PgPool};
 use uuid::Uuid;
 
 #[derive(Debug, FromRow)]
@@ -42,7 +42,7 @@ pub struct UserRepository;
 
 impl UserRepository {
     pub async fn create(
-        pool: &SqlitePool,
+        pool: &PgPool,
         email: &str,
         username: &str,
         display_name: &str,
@@ -72,7 +72,7 @@ impl UserRepository {
         Self::find_by_id(pool, &Uuid::parse_str(&id).unwrap()).await
     }
 
-    pub async fn find_by_id(pool: &SqlitePool, id: &Uuid) -> Result<User, sqlx::Error> {
+    pub async fn find_by_id(pool: &PgPool, id: &Uuid) -> Result<User, sqlx::Error> {
         let row: UserRow = sqlx::query_as(
             r#"SELECT * FROM users WHERE id = ?"#,
         )
@@ -83,7 +83,7 @@ impl UserRepository {
         Ok(row.into())
     }
 
-    pub async fn find_by_email(pool: &SqlitePool, email: &str) -> Result<User, sqlx::Error> {
+    pub async fn find_by_email(pool: &PgPool, email: &str) -> Result<User, sqlx::Error> {
         let row: UserRow = sqlx::query_as(
             r#"SELECT * FROM users WHERE email = ?"#,
         )
@@ -94,7 +94,7 @@ impl UserRepository {
         Ok(row.into())
     }
 
-    pub async fn find_by_username(pool: &SqlitePool, username: &str) -> Result<User, sqlx::Error> {
+    pub async fn find_by_username(pool: &PgPool, username: &str) -> Result<User, sqlx::Error> {
         let row: UserRow = sqlx::query_as(
             r#"SELECT * FROM users WHERE username = ?"#,
         )
@@ -106,7 +106,7 @@ impl UserRepository {
     }
 
     pub async fn update(
-        pool: &SqlitePool,
+        pool: &PgPool,
         id: &Uuid,
         display_name: Option<&str>,
         avatar_url: Option<&str>,
@@ -150,7 +150,7 @@ impl UserRepository {
     }
 
     pub async fn update_password(
-        pool: &SqlitePool,
+        pool: &PgPool,
         id: &Uuid,
         password_hash: &str,
     ) -> Result<(), sqlx::Error> {
@@ -168,7 +168,7 @@ impl UserRepository {
         Ok(())
     }
 
-    pub async fn update_last_seen(pool: &SqlitePool, id: &Uuid) -> Result<(), sqlx::Error> {
+    pub async fn update_last_seen(pool: &PgPool, id: &Uuid) -> Result<(), sqlx::Error> {
         let now = Utc::now().to_rfc3339();
 
         sqlx::query(
@@ -184,7 +184,7 @@ impl UserRepository {
     }
 
     pub async fn search(
-        pool: &SqlitePool,
+        pool: &PgPool,
         query: &str,
         limit: i64,
         offset: i64,
@@ -210,7 +210,7 @@ impl UserRepository {
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
 
-    pub async fn exists_by_email(pool: &SqlitePool, email: &str) -> Result<bool, sqlx::Error> {
+    pub async fn exists_by_email(pool: &PgPool, email: &str) -> Result<bool, sqlx::Error> {
         let result: (i64,) = sqlx::query_as(
             r#"SELECT COUNT(*) FROM users WHERE email = ?"#,
         )
@@ -221,7 +221,7 @@ impl UserRepository {
         Ok(result.0 > 0)
     }
 
-    pub async fn exists_by_username(pool: &SqlitePool, username: &str) -> Result<bool, sqlx::Error> {
+    pub async fn exists_by_username(pool: &PgPool, username: &str) -> Result<bool, sqlx::Error> {
         let result: (i64,) = sqlx::query_as(
             r#"SELECT COUNT(*) FROM users WHERE username = ?"#,
         )

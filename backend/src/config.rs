@@ -48,11 +48,11 @@ impl AppConfig {
             },
             database: DatabaseConfig {
                 url: env::var("DATABASE_URL")
-                    .unwrap_or_else(|_| "sqlite:./data/rust_teams.db?mode=rwc&create=true".to_string()),
+                    .unwrap_or_else(|_| "postgresql://postgres:postgres@localhost:5432/rust_teams".to_string()),
                 max_connections: env::var("DATABASE_MAX_CONNECTIONS")
-                    .unwrap_or_else(|_| "5".to_string())
+                    .unwrap_or_else(|_| "10".to_string())
                     .parse()
-                    .unwrap_or(5),
+                    .unwrap_or(10),
             },
             jwt: JwtConfig {
                 secret: env::var("JWT_SECRET")

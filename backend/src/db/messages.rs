@@ -2,7 +2,7 @@
 
 use chrono::{DateTime, Utc};
 use shared::models::{Message, MessageType, Reaction};
-use sqlx::{FromRow, SqlitePool};
+use sqlx::{FromRow, PgPool};
 use uuid::Uuid;
 
 #[derive(Debug, FromRow)]
@@ -59,7 +59,7 @@ pub struct MessageRepository;
 
 impl MessageRepository {
     pub async fn create(
-        pool: &SqlitePool,
+        pool: &PgPool,
         channel_id: &Uuid,
         sender_id: &Uuid,
         content: &str,
@@ -91,7 +91,7 @@ impl MessageRepository {
         Self::find_by_id(pool, &Uuid::parse_str(&id).unwrap()).await
     }
 
-    pub async fn find_by_id(pool: &SqlitePool, id: &Uuid) -> Result<Message, sqlx::Error> {
+    pub async fn find_by_id(pool: &PgPool, id: &Uuid) -> Result<Message, sqlx::Error> {
         let row: MessageRow = sqlx::query_as(
             r#"SELECT * FROM messages WHERE id = ?"#,
         )
@@ -103,7 +103,7 @@ impl MessageRepository {
     }
 
     pub async fn find_by_channel(
-        pool: &SqlitePool,
+        pool: &PgPool,
         channel_id: &Uuid,
         limit: i64,
         before: Option<DateTime<Utc>>,
@@ -135,7 +135,7 @@ impl MessageRepository {
     }
 
     pub async fn update(
-        pool: &SqlitePool,
+        pool: &PgPool,
         id: &Uuid,
         content: &str,
     ) -> Result<Message, sqlx::Error> {
@@ -154,7 +154,7 @@ impl MessageRepository {
         Self::find_by_id(pool, id).await
     }
 
-    pub async fn delete(pool: &SqlitePool, id: &Uuid) -> Result<(), sqlx::Error> {
+    pub async fn delete(pool: &PgPool, id: &Uuid) -> Result<(), sqlx::Error> {
         sqlx::query(r#"DELETE FROM messages WHERE id = ?"#)
             .bind(id.to_string())
             .execute(pool)
@@ -164,7 +164,7 @@ impl MessageRepository {
     }
 
     pub async fn search(
-        pool: &SqlitePool,
+        pool: &PgPool,
         query: &str,
         channel_id: Option<&Uuid>,
         from_user_id: Option<&Uuid>,
@@ -225,7 +225,7 @@ impl MessageRepository {
     }
 
     pub async fn get_last_message(
-        pool: &SqlitePool,
+        pool: &PgPool,
         channel_id: &Uuid,
     ) -> Result<Option<Message>, sqlx::Error> {
         let row: Option<MessageRow> = sqlx::query_as(
@@ -240,7 +240,7 @@ impl MessageRepository {
 
     // Reaction operations
     pub async fn add_reaction(
-        pool: &SqlitePool,
+        pool: &PgPool,
         message_id: &Uuid,
         user_id: &Uuid,
         emoji: &str,
@@ -273,7 +273,7 @@ impl MessageRepository {
     }
 
     pub async fn remove_reaction(
-        pool: &SqlitePool,
+        pool: &PgPool,
         message_id: &Uuid,
         user_id: &Uuid,
         emoji: &str,
@@ -291,7 +291,7 @@ impl MessageRepository {
     }
 
     pub async fn get_reactions(
-        pool: &SqlitePool,
+        pool: &PgPool,
         message_id: &Uuid,
     ) -> Result<Vec<Reaction>, sqlx::Error> {
         let rows: Vec<ReactionRow> = sqlx::query_as(
@@ -305,7 +305,7 @@ impl MessageRepository {
     }
 
     pub async fn has_user_reacted(
-        pool: &SqlitePool,
+        pool: &PgPool,
         message_id: &Uuid,
         user_id: &Uuid,
         emoji: &str,

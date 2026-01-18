@@ -2,7 +2,7 @@
 
 use chrono::{DateTime, Utc};
 use shared::models::{Channel, ChannelMember, ChannelType};
-use sqlx::{FromRow, SqlitePool};
+use sqlx::{FromRow, PgPool};
 use uuid::Uuid;
 
 #[derive(Debug, FromRow)]
@@ -57,7 +57,7 @@ pub struct ChannelRepository;
 
 impl ChannelRepository {
     pub async fn create(
-        pool: &SqlitePool,
+        pool: &PgPool,
         team_id: Option<&Uuid>,
         name: &str,
         description: Option<&str>,
@@ -103,7 +103,7 @@ impl ChannelRepository {
         Self::find_by_id(pool, &Uuid::parse_str(&id).unwrap()).await
     }
 
-    pub async fn find_by_id(pool: &SqlitePool, id: &Uuid) -> Result<Channel, sqlx::Error> {
+    pub async fn find_by_id(pool: &PgPool, id: &Uuid) -> Result<Channel, sqlx::Error> {
         let row: ChannelRow = sqlx::query_as(
             r#"SELECT * FROM channels WHERE id = ?"#,
         )
@@ -114,7 +114,7 @@ impl ChannelRepository {
         Ok(row.into())
     }
 
-    pub async fn find_by_team(pool: &SqlitePool, team_id: &Uuid) -> Result<Vec<Channel>, sqlx::Error> {
+    pub async fn find_by_team(pool: &PgPool, team_id: &Uuid) -> Result<Vec<Channel>, sqlx::Error> {
         let rows: Vec<ChannelRow> = sqlx::query_as(
             r#"SELECT * FROM channels WHERE team_id = ? ORDER BY name"#,
         )
@@ -125,7 +125,7 @@ impl ChannelRepository {
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
 
-    pub async fn find_by_user(pool: &SqlitePool, user_id: &Uuid) -> Result<Vec<Channel>, sqlx::Error> {
+    pub async fn find_by_user(pool: &PgPool, user_id: &Uuid) -> Result<Vec<Channel>, sqlx::Error> {
         let rows: Vec<ChannelRow> = sqlx::query_as(
             r#"
             SELECT c.* FROM channels c
@@ -142,7 +142,7 @@ impl ChannelRepository {
     }
 
     pub async fn find_dm_channel(
-        pool: &SqlitePool,
+        pool: &PgPool,
         user1_id: &Uuid,
         user2_id: &Uuid,
     ) -> Result<Option<Channel>, sqlx::Error> {
@@ -165,7 +165,7 @@ impl ChannelRepository {
     }
 
     pub async fn update(
-        pool: &SqlitePool,
+        pool: &PgPool,
         id: &Uuid,
         name: Option<&str>,
         description: Option<&str>,
@@ -196,7 +196,7 @@ impl ChannelRepository {
         Self::find_by_id(pool, id).await
     }
 
-    pub async fn delete(pool: &SqlitePool, id: &Uuid) -> Result<(), sqlx::Error> {
+    pub async fn delete(pool: &PgPool, id: &Uuid) -> Result<(), sqlx::Error> {
         sqlx::query(r#"DELETE FROM channels WHERE id = ?"#)
             .bind(id.to_string())
             .execute(pool)
@@ -205,7 +205,7 @@ impl ChannelRepository {
         Ok(())
     }
 
-    pub async fn get_member_count(pool: &SqlitePool, channel_id: &Uuid) -> Result<i64, sqlx::Error> {
+    pub async fn get_member_count(pool: &PgPool, channel_id: &Uuid) -> Result<i64, sqlx::Error> {
         let result: (i64,) = sqlx::query_as(
             r#"SELECT COUNT(*) FROM channel_members WHERE channel_id = ?"#,
         )
@@ -217,7 +217,7 @@ impl ChannelRepository {
     }
 
     pub async fn add_member(
-        pool: &SqlitePool,
+        pool: &PgPool,
         channel_id: &Uuid,
         user_id: &Uuid,
     ) -> Result<ChannelMember, sqlx::Error> {
@@ -241,7 +241,7 @@ impl ChannelRepository {
     }
 
     pub async fn find_member(
-        pool: &SqlitePool,
+        pool: &PgPool,
         channel_id: &Uuid,
         user_id: &Uuid,
     ) -> Result<ChannelMember, sqlx::Error> {
@@ -256,7 +256,7 @@ impl ChannelRepository {
         Ok(row.into())
     }
 
-    pub async fn find_members(pool: &SqlitePool, channel_id: &Uuid) -> Result<Vec<ChannelMember>, sqlx::Error> {
+    pub async fn find_members(pool: &PgPool, channel_id: &Uuid) -> Result<Vec<ChannelMember>, sqlx::Error> {
         let rows: Vec<ChannelMemberRow> = sqlx::query_as(
             r#"SELECT * FROM channel_members WHERE channel_id = ? ORDER BY joined_at"#,
         )
@@ -268,7 +268,7 @@ impl ChannelRepository {
     }
 
     pub async fn remove_member(
-        pool: &SqlitePool,
+        pool: &PgPool,
         channel_id: &Uuid,
         user_id: &Uuid,
     ) -> Result<(), sqlx::Error> {
@@ -284,7 +284,7 @@ impl ChannelRepository {
     }
 
     pub async fn is_member(
-        pool: &SqlitePool,
+        pool: &PgPool,
         channel_id: &Uuid,
         user_id: &Uuid,
     ) -> Result<bool, sqlx::Error> {
@@ -300,7 +300,7 @@ impl ChannelRepository {
     }
 
     pub async fn mark_as_read(
-        pool: &SqlitePool,
+        pool: &PgPool,
         channel_id: &Uuid,
         user_id: &Uuid,
     ) -> Result<(), sqlx::Error> {
@@ -319,7 +319,7 @@ impl ChannelRepository {
     }
 
     pub async fn get_unread_count(
-        pool: &SqlitePool,
+        pool: &PgPool,
         channel_id: &Uuid,
         user_id: &Uuid,
     ) -> Result<i64, sqlx::Error> {

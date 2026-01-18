@@ -5,7 +5,7 @@
 use actix_cors::Cors;
 use actix_files::Files;
 use actix_web::{middleware as actix_middleware, web, App, HttpServer};
-use sqlx::sqlite::SqlitePoolOptions;
+use sqlx::postgres::PgPoolOptions;
 use std::sync::Arc;
 use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -57,7 +57,7 @@ async fn main() -> std::io::Result<()> {
         .expect("Failed to create static directory");
 
     // Create database pool
-    let pool = SqlitePoolOptions::new()
+    let pool = PgPoolOptions::new()
         .max_connections(config.database.max_connections)
         .connect(&config.database.url)
         .await
