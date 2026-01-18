@@ -5,14 +5,12 @@ import { apiClient } from './api/client';
 import { wsClient } from './websocket/client';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import HomePage from './pages/HomePage';
 import ChatPage from './pages/ChatPage';
 import TeamPage from './pages/TeamPage';
 import SettingsPage from './pages/SettingsPage';
-import './index.css';
 
 function App() {
-  const { isAuthenticated, currentUser, accessToken, setAuth, logout } = useStore();
+  const { isAuthenticated, accessToken, setAuth, logout } = useStore();
 
   useEffect(() => {
     // Check for existing auth on mount

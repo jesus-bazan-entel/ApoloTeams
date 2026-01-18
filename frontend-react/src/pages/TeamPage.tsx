@@ -19,6 +19,7 @@ function TeamPage() {
   }, [teamId]);
 
   const loadChannels = async () => {
+    if (!teamId) return;
     setLoading(true);
     try {
       const channelsData = await apiClient.listTeamChannels(teamId);
@@ -30,8 +31,9 @@ function TeamPage() {
     }
   };
 
-  const handleCreateChannel = async (e: React.FormEvent) => {
+  const handleCreateChannel = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!teamId) return;
     const formData = new FormData(e.currentTarget);
     const name = formData.get('name') as string;
     const description = formData.get('description') as string;

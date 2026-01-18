@@ -7,7 +7,7 @@ import type { Message } from '../types';
 
 function ChatPage() {
   const { channelId } = useParams<{ channelId: string }>();
-  const { currentUser, selectedChannelId, setSelectedChannel, messages, setMessages, addMessage } = useStore();
+  const { currentUser, setSelectedChannel, messages, setMessages, addMessage } = useStore();
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -16,7 +16,7 @@ function ChatPage() {
       setSelectedChannel(channelId);
       loadMessages();
     }
-  }, [channelId]);
+  }, [channelId, setSelectedChannel]);
 
   useEffect(() => {
     // Scroll to bottom when new messages arrive
@@ -26,6 +26,7 @@ function ChatPage() {
   }, [messages]);
 
   const loadMessages = async () => {
+    if (!channelId) return;
     try {
       const msgs = await apiClient.listMessages(channelId);
       setMessages(channelId, msgs);
@@ -53,7 +54,7 @@ function ChatPage() {
     }
   };
 
-  const currentMessages = messages[channelId] || [];
+  const currentMessages: Message[] = channelId ? (messages[channelId] || []) : [];
 
   return (
     <div className="flex h-screen bg-gray-50">
