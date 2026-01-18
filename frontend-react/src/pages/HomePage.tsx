@@ -48,7 +48,7 @@ const MenuIcon = () => (
 
 function HomePage() {
   const navigate = useNavigate();
-  const { currentUser, teams, setTeams, setSelectedTeamId } = useStore();
+  const { currentUser, teams, setTeams, setSelectedTeam } = useStore();
   const [loading, setLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
@@ -73,7 +73,7 @@ function HomePage() {
   };
 
   const handleTeamClick = (teamId: string) => {
-    setSelectedTeamId(teamId);
+    setSelectedTeam(teamId);
     navigate(`/teams/${teamId}`);
   };
 
