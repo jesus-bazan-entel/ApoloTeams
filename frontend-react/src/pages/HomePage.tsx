@@ -5,42 +5,56 @@ import { apiClient } from '../api/client';
 
 // Icons
 const TeamsIcon = () => (
-  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19.5 3h-15C3.12 3 2 4.12 2 5.5v13C2 19.88 3.12 21 4.5 21h15c1.38 0 2.5-1.12 2.5-2.5v-13C22 4.12 20.88 3 19.5 3zm-7 3c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm0 10c2.7 0 5.8-1.29 6-2H8c.22.71 3.3 2 6 2zm5-3h-8v3h4v4h3l-5 6v-5h-2v3h4v1h-6V9h8v4z"/>
   </svg>
 );
 
 const ChatIcon = () => (
-  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-    <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
   </svg>
 );
 
 const SettingsIcon = () => (
-  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-    <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
   </svg>
 );
 
 const LogoutIcon = () => (
-  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-    <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
+  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
   </svg>
 );
 
 const PlusIcon = () => (
-  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-    <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+  </svg>
+);
+
+const SearchIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+  </svg>
+);
+
+const MenuIcon = () => (
+  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
   </svg>
 );
 
 function HomePage() {
   const navigate = useNavigate();
-  const { currentUser, teams, setTeams, setSelectedTeam } = useStore();
+  const { currentUser, teams, setTeams, setSelectedTeamId } = useStore();
   const [loading, setLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
   const [creating, setCreating] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     loadTeams();
@@ -59,7 +73,7 @@ function HomePage() {
   };
 
   const handleTeamClick = (teamId: string) => {
-    setSelectedTeam(teamId);
+    setSelectedTeamId(teamId);
     navigate(`/teams/${teamId}`);
   };
 
@@ -91,47 +105,66 @@ function HomePage() {
 
   const getTeamColor = (index: number) => {
     const colors = [
-      'bg-teams-purple',
-      'bg-teams-blue',
-      'bg-emerald-500',
-      'bg-orange-500',
-      'bg-pink-500',
-      'bg-cyan-500',
+      'from-purple-500 to-indigo-600',
+      'from-blue-500 to-cyan-500',
+      'from-emerald-500 to-teal-500',
+      'from-orange-500 to-amber-500',
+      'from-pink-500 to-rose-500',
+      'from-cyan-500 to-blue-500',
     ];
     return colors[index % colors.length];
   };
 
+  const filteredTeams = teams.filter(team =>
+    team.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className="min-h-screen bg-surface flex">
-      {/* Sidebar */}
-      <aside className="w-16 bg-sidebar flex flex-col items-center py-4 gap-4">
-        <div className="w-10 h-10 rounded-lg bg-teams-purple flex items-center justify-center text-white">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V5H19V19Z"/>
-            <path d="M7 12H9V17H7V12ZM11 7H13V17H11V7ZM15 10H17V17H15V10Z"/>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+      {/* Mobile Sidebar Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/20 z-40 lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar - Hidden on mobile unless opened */}
+      <aside className={`
+        fixed lg:relative inset-y-0 left-0 z-50
+        w-16 bg-gradient-to-b from-gray-900 to-gray-800 
+        flex flex-col items-center py-4 gap-4
+        transform transition-transform duration-300 ease-in-out
+        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        {/* Logo */}
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teams-purple to-teams-blue flex items-center justify-center text-white shadow-lg">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19.5 3h-15C3.12 3 2 4.12 2 5.5v13C2 19.88 3.12 21 4.5 21h15c1.38 0 2.5-1.12 2.5-2.5v-13C22 4.12 20.88 3 19.5 3z"/>
           </svg>
         </div>
         
-        <div className="flex-1 flex flex-col gap-2 mt-4">
+        <div className="w-8 h-px bg-gray-700 my-2" />
+        
+        <div className="flex-1 flex flex-col gap-2">
           <button
             onClick={() => navigate('/chat')}
-            className="w-10 h-10 rounded-lg hover:bg-sidebar-hover flex items-center justify-center text-sidebar-text-muted hover:text-white transition-colors"
+            className="sidebar-item group"
             title="Chat"
           >
             <ChatIcon />
           </button>
-          <button
-            className="w-10 h-10 rounded-lg bg-sidebar-active flex items-center justify-center text-white"
-            title="Teams"
-          >
+          <div className="sidebar-item-active" title="Teams">
             <TeamsIcon />
-          </button>
+          </div>
         </div>
+
+        <div className="w-8 h-px bg-gray-700 my-2" />
 
         <div className="flex flex-col gap-2">
           <button
             onClick={() => navigate('/settings')}
-            className="w-10 h-10 rounded-lg hover:bg-sidebar-hover flex items-center justify-center text-sidebar-text-muted hover:text-white transition-colors"
+            className="sidebar-item"
             title="Settings"
           >
             <SettingsIcon />
@@ -141,7 +174,7 @@ function HomePage() {
               useStore.getState().logout();
               navigate('/login');
             }}
-            className="w-10 h-10 rounded-lg hover:bg-sidebar-hover flex items-center justify-center text-sidebar-text-muted hover:text-white transition-colors"
+            className="sidebar-item text-red-400 hover:text-red-300 hover:bg-red-500/10"
             title="Sign out"
           >
             <LogoutIcon />
@@ -150,72 +183,96 @@ function HomePage() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col min-h-screen">
         {/* Header */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm">
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-semibold text-gray-900">Teams</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="flex items-center gap-3">
+        <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 px-4 lg:px-6 py-4 sticky top-0 z-30">
+          <div className="flex items-center justify-between gap-4">
+            {/* Mobile menu button */}
+            <button 
+              onClick={() => setMobileMenuOpen(true)}
+              className="lg:hidden btn-teams-icon"
+            >
+              <MenuIcon />
+            </button>
+
+            {/* Search */}
+            <div className="flex-1 max-w-xl">
+              <div className="relative">
+                <SearchIcon />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search teams..."
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-100 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teams-purple/20 focus:bg-white transition-all"
+                />
+              </div>
+            </div>
+
+            {/* User */}
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:flex items-center gap-3">
                 <div className="avatar-teams-md">
                   {currentUser?.display_name ? getInitials(currentUser.display_name) : 'U'}
                 </div>
-                <div className="hidden sm:block">
+                <div className="hidden md:block text-right">
                   <p className="text-sm font-medium text-gray-900">{currentUser?.display_name || 'User'}</p>
                   <p className="text-xs text-gray-500">{currentUser?.email}</p>
                 </div>
               </div>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="btn-teams-primary"
+              >
+                <PlusIcon />
+                <span className="hidden sm:inline">New Team</span>
+              </button>
             </div>
           </div>
         </header>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {/* Welcome Section */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+        <div className="flex-1 p-4 lg:p-6 overflow-y-auto">
+          {/* Welcome Banner */}
+          <div className="bg-gradient-to-r from-teams-purple to-teams-blue rounded-2xl p-6 lg:p-8 mb-6 lg:mb-8 text-white">
+            <h1 className="text-2xl lg:text-3xl font-bold mb-2">
               Welcome back, {currentUser?.display_name?.split(' ')[0] || 'there'}! 👋
-            </h2>
-            <p className="text-gray-600">
-              Select a team to start collaborating or create a new one.
+            </h1>
+            <p className="text-white/80 text-lg">
+              Ready to collaborate with your team?
             </p>
           </div>
 
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="card-teams flex items-center gap-4 hover:shadow-teams-lg transition-shadow group"
-            >
-              <div className="w-12 h-12 rounded-lg bg-teams-purple-50 flex items-center justify-center text-teams-purple group-hover:bg-teams-purple group-hover:text-white transition-colors">
-                <PlusIcon />
+          {/* Quick Stats */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 lg:mb-8">
+            <div className="card-teams p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-teams-purple-100 flex items-center justify-center">
+                  <TeamsIcon />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-900">{teams.length}</p>
+                  <p className="text-sm text-gray-500">Teams</p>
+                </div>
               </div>
-              <div className="text-left">
-                <p className="font-medium text-gray-900">Create Team</p>
-                <p className="text-sm text-gray-500">Start a new workspace</p>
+            </div>
+            <div className="card-teams p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <ChatIcon />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-900">12</p>
+                  <p className="text-sm text-gray-500">Messages</p>
+                </div>
               </div>
-            </button>
-
-            <button
-              onClick={() => navigate('/chat')}
-              className="card-teams flex items-center gap-4 hover:shadow-teams-lg transition-shadow group"
-            >
-              <div className="w-12 h-12 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
-                <ChatIcon />
-              </div>
-              <div className="text-left">
-                <p className="font-medium text-gray-900">Go to Chat</p>
-                <p className="text-sm text-gray-500">View all messages</p>
-              </div>
-            </button>
+            </div>
           </div>
 
-          {/* Teams Grid */}
+          {/* Teams Section */}
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Your Teams</h3>
-            <span className="text-sm text-gray-500">{teams.length} team{teams.length !== 1 ? 's' : ''}</span>
+            <h2 className="text-xl font-semibold text-gray-900">Your Teams</h2>
+            <span className="badge-primary">{filteredTeams.length} total</span>
           </div>
 
           {loading ? (
@@ -225,56 +282,69 @@ function HomePage() {
                 <p className="text-gray-500">Loading teams...</p>
               </div>
             </div>
-          ) : teams.length === 0 ? (
-            <div className="card-teams text-center py-16">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-teams-purple-50 flex items-center justify-center">
+          ) : filteredTeams.length === 0 ? (
+            <div className="card-teams text-center py-12 px-6">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-teams-purple-100 to-teams-blue-100 flex items-center justify-center">
                 <TeamsIcon />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No teams yet</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                {searchQuery ? 'No teams found' : 'No teams yet'}
+              </h3>
               <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                Create your first team to start collaborating with others. Teams help you organize conversations and work together.
+                {searchQuery 
+                  ? `No teams matching "${searchQuery}"`
+                  : 'Create your first team to start collaborating with others.'}
               </p>
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="btn-teams-primary"
-              >
-                <PlusIcon />
-                <span className="ml-2">Create your first team</span>
-              </button>
+              {!searchQuery && (
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="btn-teams-primary"
+                >
+                  <PlusIcon />
+                  Create your first team
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {teams.map((team, index) => (
+              {filteredTeams.map((team, index) => (
                 <div
                   key={team.id}
                   onClick={() => handleTeamClick(team.id)}
-                  className="card-teams hover:shadow-teams-lg transition-all cursor-pointer group"
+                  className="card-teams-hover p-5 cursor-pointer group"
                 >
-                  <div className="flex items-start gap-4">
-                    <div className={`w-14 h-14 rounded-lg ${getTeamColor(index)} flex items-center justify-center text-white font-bold text-lg flex-shrink-0`}>
+                  {/* Header */}
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${getTeamColor(index)} flex items-center justify-center text-white font-bold text-lg shadow-md flex-shrink-0`}>
                       {getInitials(team.name)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-gray-900 group-hover:text-teams-purple transition-colors truncate">
+                      <h3 className="font-semibold text-gray-900 group-hover:text-teams-purple transition-colors truncate">
                         {team.name}
-                      </h4>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {team.member_count} member{team.member_count !== 1 ? 's' : ''}
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        {team.member_count || 0} member{(team.member_count || 0) !== 1 ? 's' : ''}
                       </p>
-                      {team.description && (
-                        <p className="text-sm text-gray-600 mt-2 truncate-2">
-                          {team.description}
-                        </p>
-                      )}
                     </div>
                   </div>
-                  <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+
+                  {/* Description */}
+                  {team.description && (
+                    <p className="text-sm text-gray-600 mb-4 truncate-2">
+                      {team.description}
+                    </p>
+                  )}
+
+                  {/* Footer */}
+                  <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
                     <span className="text-xs text-gray-400">
                       Created {new Date(team.created_at).toLocaleDateString()}
                     </span>
-                    <svg className="w-5 h-5 text-gray-400 group-hover:text-teams-purple group-hover:translate-x-1 transition-all" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                    </svg>
+                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-teams-purple group-hover:text-white transition-all">
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                      </svg>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -285,11 +355,18 @@ function HomePage() {
 
       {/* Create Team Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in">
-          <div className="bg-white rounded-lg shadow-teams-xl w-full max-w-md mx-4 animate-in">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Create a new team</h2>
-              <p className="text-sm text-gray-500 mt-1">Teams help you organize your work and collaborate with others.</p>
+        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teams-purple to-teams-blue flex items-center justify-center text-white">
+                  <PlusIcon />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">Create new team</h2>
+                  <p className="text-sm text-gray-500">Start collaborating with your team</p>
+                </div>
+              </div>
             </div>
             <form onSubmit={handleCreateTeam} className="p-6">
               <div className="space-y-4">
@@ -302,7 +379,7 @@ function HomePage() {
                     type="text"
                     value={newTeamName}
                     onChange={(e) => setNewTeamName(e.target.value)}
-                    className="input-teams"
+                    className="input-teams-lg"
                     placeholder="e.g., Marketing Team"
                     autoFocus
                   />
@@ -321,7 +398,14 @@ function HomePage() {
                   disabled={creating || !newTeamName.trim()}
                   className="btn-teams-primary disabled:opacity-50"
                 >
-                  {creating ? 'Creating...' : 'Create team'}
+                  {creating ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    'Create team'
+                  )}
                 </button>
               </div>
             </form>

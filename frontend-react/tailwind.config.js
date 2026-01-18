@@ -42,16 +42,15 @@ export default {
           dark: '#292929',
           darker: '#1F1F1F',
           light: '#FFFFFF',
-          hover: '#E5E5E5',
+          hover: '#F0F0F0',
           'hover-dark': '#3D3D3D',
         },
         // Sidebar colors
         sidebar: {
-          DEFAULT: '#292929',
-          hover: '#3D3D3D',
-          active: '#464775',
-          text: '#FFFFFF',
-          'text-muted': '#B3B3B3',
+          DEFAULT: '#1F1F1F',
+          hover: '#323232',
+          active: '#6264A7',
+          'text-muted': '#9A9A9A',
         },
         // Status colors
         status: {
@@ -81,17 +80,20 @@ export default {
       },
       boxShadow: {
         'teams': '0 1.6px 3.6px 0 rgba(0,0,0,0.132), 0 0.3px 0.9px 0 rgba(0,0,0,0.108)',
-        'teams-lg': '0 6.4px 14.4px 0 rgba(0,0,0,0.132), 0 1.2px 3.6px 0 rgba(0,0,0,0.108)',
-        'teams-xl': '0 25.6px 57.6px 0 rgba(0,0,0,0.22), 0 4.8px 14.4px 0 rgba(0,0,0,0.18)',
+        'teams-md': '0 4px 8px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)',
+        'teams-lg': '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)',
+        'teams-xl': '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
       },
       borderRadius: {
-        'teams': '4px',
-        'teams-lg': '8px',
+        'teams': '6px',
+        'teams-lg': '12px',
       },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-in-out',
         'slide-in': 'slideIn 0.3s ease-out',
-        'pulse-teams': 'pulseTeams 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'slide-up': 'slideUp 0.3s ease-out',
+        'pulse-soft': 'pulseSoft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'bounce-soft': 'bounceSoft 1s infinite',
       },
       keyframes: {
         fadeIn: {
@@ -102,10 +104,25 @@ export default {
           '0%': { transform: 'translateX(-10px)', opacity: '0' },
           '100%': { transform: 'translateX(0)', opacity: '1' },
         },
-        pulseTeams: {
-          '0%, 100%': { opacity: '1' },
-          '50%': { opacity: '0.5' },
+        slideUp: {
+          '0%': { transform: 'translateY(10px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
         },
+        pulseSoft: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.7' },
+        },
+        bounceSoft: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-5px)' },
+        },
+      },
+      transitionDuration: {
+        '200': '200ms',
+        '300': '300ms',
+      },
+      transitionTimingFunction: {
+        'teams': 'cubic-bezier(0.4, 0, 0.2, 1)',
       },
     },
   },
