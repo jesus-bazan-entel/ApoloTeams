@@ -40,8 +40,8 @@ if echo "$REGISTER_RESPONSE" | grep -q "access_token"; then
     echo "✅ Registro exitoso!"
     echo ""
 
-    # Extraer el token
-    ACCESS_TOKEN=$(echo "$REGISTER_RESPONSE" | jq -r '.access_token' 2>/dev/null)
+    # Extraer el token (sin comillas)
+    ACCESS_TOKEN=$(echo "$REGISTER_RESPONSE" | jq -r '.access_token' 2>/dev/null | tr -d '"')
     USER_ID=$(echo "$REGISTER_RESPONSE" | jq -r '.user.id' 2>/dev/null)
 
     echo "2. Probando login con las mismas credenciales..."
@@ -71,7 +71,10 @@ if echo "$REGISTER_RESPONSE" | grep -q "access_token"; then
         echo "$ME_RESPONSE" | jq . 2>/dev/null || echo "$ME_RESPONSE"
         echo ""
 
-        if echo "$ME_RESPONSE" | grep -q "id"; then
+        if echo "$ME_RESPONSE" | grep -q '"error"'; then
+            echo "❌ Error en endpoint protegido:"
+            echo "$ME_RESPONSE" | jq . 2>/dev/null || echo "$ME_RESPONSE"
+        elif echo "$ME_RESPONSE" | grep -q "id"; then
             echo "✅ Endpoint protegido funciona correctamente!"
             echo ""
             echo "=========================================="
@@ -84,7 +87,7 @@ if echo "$REGISTER_RESPONSE" | grep -q "access_token"; then
             echo "  User ID: ${USER_ID}"
             echo ""
         else
-            echo "❌ Error en endpoint protegido"
+            echo "❌ Respuesta inesperada del endpoint protegido"
         fi
     else
         echo "❌ Login falló"
