@@ -7,27 +7,27 @@ use uuid::Uuid;
 
 #[derive(Debug, FromRow)]
 pub struct NotificationRow {
-    pub id: String,
-    pub user_id: String,
+    pub id: Uuid,
+    pub user_id: Uuid,
     pub title: String,
     pub body: String,
     pub notification_type: String,
     pub reference_id: Option<String>,
     pub read: bool,
-    pub created_at: String,
+    pub created_at: DateTime<Utc>,
 }
 
 impl From<NotificationRow> for Notification {
     fn from(row: NotificationRow) -> Self {
         Notification {
-            id: Uuid::parse_str(&row.id).unwrap_or_default(),
-            user_id: Uuid::parse_str(&row.user_id).unwrap_or_default(),
+            id: row.id,
+            user_id: row.user_id,
             title: row.title,
             body: row.body,
             notification_type: row.notification_type.parse().unwrap_or(NotificationType::System),
             reference_id: row.reference_id,
             read: row.read,
-            created_at: DateTime::parse_from_rfc3339(&row.created_at).unwrap().with_timezone(&Utc),
+            created_at: row.created_at,
         }
     }
 }
@@ -43,17 +43,17 @@ impl NotificationRepository {
         notification_type: &str,
         reference_id: Option<&Uuid>,
     ) -> Result<Notification, sqlx::Error> {
-        let id = Uuid::new_v4().to_string();
-        let now = Utc::now().to_rfc3339();
+        let id = Uuid::new_v4();
+        let now = Utc::now();
 
         sqlx::query(
             r#"
             INSERT INTO notifications (id, user_id, title, body, notification_type, reference_id, read, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             "#,
         )
         .bind(&id)
-        .bind(user_id.to_string())
+        .bind(user_id)
         .bind(title)
         .bind(body)
         .bind(notification_type)
@@ -63,14 +63,14 @@ impl NotificationRepository {
         .execute(pool)
         .await?;
 
-        Self::find_by_id(pool, &Uuid::parse_str(&id).unwrap()).await
+        Self::find_by_id(pool, &id).await
     }
 
     pub async fn find_by_id(pool: &PgPool, id: &Uuid) -> Result<Notification, sqlx::Error> {
         let row: NotificationRow = sqlx::query_as(
-            r#"SELECT * FROM notifications WHERE id = ?"#,
+            r#"SELECT id, user_id, title, body, notification_type, reference_id, read, created_at FROM notifications WHERE id = $1"#,
         )
-        .bind(id.to_string())
+        .bind(id)
         .fetch_one(pool)
         .await?;
 
@@ -84,27 +84,25 @@ impl NotificationRepository {
         limit: i64,
         offset: i64,
     ) -> Result<Vec<Notification>, sqlx::Error> {
-        let query = if unread_only {
-            r#"SELECT * FROM notifications WHERE user_id = ? AND read = ? ORDER BY created_at DESC LIMIT ? OFFSET ?"#
-        } else {
-            r#"SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?"#
-        };
-
         let rows: Vec<NotificationRow> = if unread_only {
-            sqlx::query_as(query)
-                .bind(user_id.to_string())
-                .bind(false)
-                .bind(limit)
-                .bind(offset)
-                .fetch_all(pool)
-                .await?
+            sqlx::query_as(
+                r#"SELECT id, user_id, title, body, notification_type, reference_id, read, created_at FROM notifications WHERE user_id = $1 AND read = $2 ORDER BY created_at DESC LIMIT $3 OFFSET $4"#
+            )
+            .bind(user_id)
+            .bind(false)
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(pool)
+            .await?
         } else {
-            sqlx::query_as(query)
-                .bind(user_id.to_string())
-                .bind(limit)
-                .bind(offset)
-                .fetch_all(pool)
-                .await?
+            sqlx::query_as(
+                r#"SELECT id, user_id, title, body, notification_type, reference_id, read, created_at FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3"#
+            )
+            .bind(user_id)
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(pool)
+            .await?
         };
 
         Ok(rows.into_iter().map(|r| r.into()).collect())
@@ -112,10 +110,10 @@ impl NotificationRepository {
 
     pub async fn mark_as_read(pool: &PgPool, id: &Uuid) -> Result<(), sqlx::Error> {
         sqlx::query(
-            r#"UPDATE notifications SET read = ? WHERE id = ?"#,
+            r#"UPDATE notifications SET read = $1 WHERE id = $2"#,
         )
         .bind(true)
-        .bind(id.to_string())
+        .bind(id)
         .execute(pool)
         .await?;
 
@@ -124,10 +122,10 @@ impl NotificationRepository {
 
     pub async fn mark_all_as_read(pool: &PgPool, user_id: &Uuid) -> Result<(), sqlx::Error> {
         sqlx::query(
-            r#"UPDATE notifications SET read = ? WHERE user_id = ? AND read = ?"#,
+            r#"UPDATE notifications SET read = $1 WHERE user_id = $2 AND read = $3"#,
         )
         .bind(true)
-        .bind(user_id.to_string())
+        .bind(user_id)
         .bind(false)
         .execute(pool)
         .await?;
@@ -137,9 +135,9 @@ impl NotificationRepository {
 
     pub async fn get_unread_count(pool: &PgPool, user_id: &Uuid) -> Result<i64, sqlx::Error> {
         let result: (i64,) = sqlx::query_as(
-            r#"SELECT COUNT(*) FROM notifications WHERE user_id = ? AND read = ?"#,
+            r#"SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND read = $2"#,
         )
-        .bind(user_id.to_string())
+        .bind(user_id)
         .bind(false)
         .fetch_one(pool)
         .await?;
@@ -148,8 +146,8 @@ impl NotificationRepository {
     }
 
     pub async fn delete(pool: &PgPool, id: &Uuid) -> Result<(), sqlx::Error> {
-        sqlx::query(r#"DELETE FROM notifications WHERE id = ?"#)
-            .bind(id.to_string())
+        sqlx::query(r#"DELETE FROM notifications WHERE id = $1"#)
+            .bind(id)
             .execute(pool)
             .await?;
 
@@ -157,10 +155,10 @@ impl NotificationRepository {
     }
 
     pub async fn delete_old(pool: &PgPool, days: i64) -> Result<u64, sqlx::Error> {
-        let cutoff = (Utc::now() - chrono::Duration::days(days)).to_rfc3339();
+        let cutoff = Utc::now() - chrono::Duration::days(days);
 
         let result = sqlx::query(
-            r#"DELETE FROM notifications WHERE created_at < ? AND read = ?"#,
+            r#"DELETE FROM notifications WHERE created_at < $1 AND read = $2"#,
         )
         .bind(&cutoff)
         .bind(true)

@@ -7,48 +7,48 @@ use uuid::Uuid;
 
 #[derive(Debug, FromRow)]
 pub struct ChannelRow {
-    pub id: String,
-    pub team_id: Option<String>,
+    pub id: Uuid,
+    pub team_id: Option<Uuid>,
     pub name: String,
     pub description: Option<String>,
     pub channel_type: String,
-    pub created_by: String,
-    pub created_at: String,
-    pub updated_at: String,
+    pub created_by: Uuid,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 impl From<ChannelRow> for Channel {
     fn from(row: ChannelRow) -> Self {
         Channel {
-            id: Uuid::parse_str(&row.id).unwrap_or_default(),
-            team_id: row.team_id.and_then(|s| Uuid::parse_str(&s).ok()),
+            id: row.id,
+            team_id: row.team_id,
             name: row.name,
             description: row.description,
             channel_type: serde_json::from_str(&format!("\"{}\"", row.channel_type)).unwrap_or_default(),
-            created_by: Uuid::parse_str(&row.created_by).unwrap_or_default(),
-            created_at: DateTime::parse_from_rfc3339(&row.created_at).unwrap().with_timezone(&Utc),
-            updated_at: DateTime::parse_from_rfc3339(&row.updated_at).unwrap().with_timezone(&Utc),
+            created_by: row.created_by,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
         }
     }
 }
 
 #[derive(Debug, FromRow)]
 pub struct ChannelMemberRow {
-    pub id: String,
-    pub channel_id: String,
-    pub user_id: String,
-    pub joined_at: String,
-    pub last_read_at: Option<String>,
+    pub id: Uuid,
+    pub channel_id: Uuid,
+    pub user_id: Uuid,
+    pub joined_at: DateTime<Utc>,
+    pub last_read_at: Option<DateTime<Utc>>,
 }
 
 impl From<ChannelMemberRow> for ChannelMember {
     fn from(row: ChannelMemberRow) -> Self {
         ChannelMember {
-            id: Uuid::parse_str(&row.id).unwrap_or_default(),
-            channel_id: Uuid::parse_str(&row.channel_id).unwrap_or_default(),
-            user_id: Uuid::parse_str(&row.user_id).unwrap_or_default(),
-            joined_at: DateTime::parse_from_rfc3339(&row.joined_at).unwrap().with_timezone(&Utc),
-            last_read_at: row.last_read_at.and_then(|s| DateTime::parse_from_rfc3339(&s).ok().map(|dt| dt.with_timezone(&Utc))),
+            id: row.id,
+            channel_id: row.channel_id,
+            user_id: row.user_id,
+            joined_at: row.joined_at,
+            last_read_at: row.last_read_at,
         }
     }
 }
@@ -64,50 +64,50 @@ impl ChannelRepository {
         channel_type: ChannelType,
         created_by: &Uuid,
     ) -> Result<Channel, sqlx::Error> {
-        let id = Uuid::new_v4().to_string();
-        let now = Utc::now().to_rfc3339();
+        let id = Uuid::new_v4();
+        let now = Utc::now();
         let type_str = serde_json::to_string(&channel_type).unwrap().trim_matches('"').to_string();
 
         sqlx::query(
             r#"
             INSERT INTO channels (id, team_id, name, description, channel_type, created_by, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             "#,
         )
         .bind(&id)
-        .bind(team_id.map(|t| t.to_string()))
+        .bind(team_id)
         .bind(name)
         .bind(description)
         .bind(&type_str)
-        .bind(created_by.to_string())
+        .bind(created_by)
         .bind(&now)
         .bind(&now)
         .execute(pool)
         .await?;
 
         // Add creator as a member
-        let member_id = Uuid::new_v4().to_string();
+        let member_id = Uuid::new_v4();
         sqlx::query(
             r#"
             INSERT INTO channel_members (id, channel_id, user_id, joined_at)
-            VALUES (?, ?, ?, ?)
+            VALUES ($1, $2, $3, $4)
             "#,
         )
         .bind(&member_id)
         .bind(&id)
-        .bind(created_by.to_string())
+        .bind(created_by)
         .bind(&now)
         .execute(pool)
         .await?;
 
-        Self::find_by_id(pool, &Uuid::parse_str(&id).unwrap()).await
+        Self::find_by_id(pool, &id).await
     }
 
     pub async fn find_by_id(pool: &PgPool, id: &Uuid) -> Result<Channel, sqlx::Error> {
         let row: ChannelRow = sqlx::query_as(
-            r#"SELECT * FROM channels WHERE id = ?"#,
+            r#"SELECT id, team_id, name, description, channel_type, created_by, created_at, updated_at FROM channels WHERE id = $1"#,
         )
-        .bind(id.to_string())
+        .bind(id)
         .fetch_one(pool)
         .await?;
 
@@ -116,9 +116,9 @@ impl ChannelRepository {
 
     pub async fn find_by_team(pool: &PgPool, team_id: &Uuid) -> Result<Vec<Channel>, sqlx::Error> {
         let rows: Vec<ChannelRow> = sqlx::query_as(
-            r#"SELECT * FROM channels WHERE team_id = ? ORDER BY name"#,
+            r#"SELECT id, team_id, name, description, channel_type, created_by, created_at, updated_at FROM channels WHERE team_id = $1 ORDER BY name"#,
         )
-        .bind(team_id.to_string())
+        .bind(team_id)
         .fetch_all(pool)
         .await?;
 
@@ -128,13 +128,14 @@ impl ChannelRepository {
     pub async fn find_by_user(pool: &PgPool, user_id: &Uuid) -> Result<Vec<Channel>, sqlx::Error> {
         let rows: Vec<ChannelRow> = sqlx::query_as(
             r#"
-            SELECT c.* FROM channels c
+            SELECT c.id, c.team_id, c.name, c.description, c.channel_type, c.created_by, c.created_at, c.updated_at 
+            FROM channels c
             INNER JOIN channel_members cm ON c.id = cm.channel_id
-            WHERE cm.user_id = ?
+            WHERE cm.user_id = $1
             ORDER BY c.name
             "#,
         )
-        .bind(user_id.to_string())
+        .bind(user_id)
         .fetch_all(pool)
         .await?;
 
@@ -148,16 +149,17 @@ impl ChannelRepository {
     ) -> Result<Option<Channel>, sqlx::Error> {
         let row: Option<ChannelRow> = sqlx::query_as(
             r#"
-            SELECT c.* FROM channels c
+            SELECT c.id, c.team_id, c.name, c.description, c.channel_type, c.created_by, c.created_at, c.updated_at 
+            FROM channels c
             INNER JOIN channel_members cm1 ON c.id = cm1.channel_id
             INNER JOIN channel_members cm2 ON c.id = cm2.channel_id
             WHERE c.channel_type = 'direct_message'
-            AND cm1.user_id = ?
-            AND cm2.user_id = ?
+            AND cm1.user_id = $1
+            AND cm2.user_id = $2
             "#,
         )
-        .bind(user1_id.to_string())
-        .bind(user2_id.to_string())
+        .bind(user1_id)
+        .bind(user2_id)
         .fetch_optional(pool)
         .await?;
 
@@ -170,35 +172,44 @@ impl ChannelRepository {
         name: Option<&str>,
         description: Option<&str>,
     ) -> Result<Channel, sqlx::Error> {
-        let now = Utc::now().to_rfc3339();
-        let mut query = String::from("UPDATE channels SET updated_at = ?");
-        let mut params: Vec<String> = vec![now.clone()];
+        let now = Utc::now();
+        let mut set_clauses = vec!["updated_at = $1".to_string()];
+        let mut param_index = 2;
 
+        if name.is_some() {
+            set_clauses.push(format!("name = ${}", param_index));
+            param_index += 1;
+        }
+
+        if description.is_some() {
+            set_clauses.push(format!("description = ${}", param_index));
+            param_index += 1;
+        }
+
+        let query = format!(
+            "UPDATE channels SET {} WHERE id = ${}",
+            set_clauses.join(", "),
+            param_index
+        );
+
+        let mut q = sqlx::query(&query).bind(&now);
+        
         if let Some(n) = name {
-            query.push_str(", name = ?");
-            params.push(n.to_string());
+            q = q.bind(n);
         }
-
         if let Some(d) = description {
-            query.push_str(", description = ?");
-            params.push(d.to_string());
+            q = q.bind(d);
         }
-
-        query.push_str(" WHERE id = ?");
-        params.push(id.to_string());
-
-        let mut q = sqlx::query(&query);
-        for param in &params {
-            q = q.bind(param);
-        }
+        
+        q = q.bind(id);
         q.execute(pool).await?;
 
         Self::find_by_id(pool, id).await
     }
 
     pub async fn delete(pool: &PgPool, id: &Uuid) -> Result<(), sqlx::Error> {
-        sqlx::query(r#"DELETE FROM channels WHERE id = ?"#)
-            .bind(id.to_string())
+        sqlx::query(r#"DELETE FROM channels WHERE id = $1"#)
+            .bind(id)
             .execute(pool)
             .await?;
 
@@ -207,9 +218,9 @@ impl ChannelRepository {
 
     pub async fn get_member_count(pool: &PgPool, channel_id: &Uuid) -> Result<i64, sqlx::Error> {
         let result: (i64,) = sqlx::query_as(
-            r#"SELECT COUNT(*) FROM channel_members WHERE channel_id = ?"#,
+            r#"SELECT COUNT(*) FROM channel_members WHERE channel_id = $1"#,
         )
-        .bind(channel_id.to_string())
+        .bind(channel_id)
         .fetch_one(pool)
         .await?;
 
@@ -221,18 +232,18 @@ impl ChannelRepository {
         channel_id: &Uuid,
         user_id: &Uuid,
     ) -> Result<ChannelMember, sqlx::Error> {
-        let id = Uuid::new_v4().to_string();
-        let now = Utc::now().to_rfc3339();
+        let id = Uuid::new_v4();
+        let now = Utc::now();
 
         sqlx::query(
             r#"
             INSERT INTO channel_members (id, channel_id, user_id, joined_at)
-            VALUES (?, ?, ?, ?)
+            VALUES ($1, $2, $3, $4)
             "#,
         )
         .bind(&id)
-        .bind(channel_id.to_string())
-        .bind(user_id.to_string())
+        .bind(channel_id)
+        .bind(user_id)
         .bind(&now)
         .execute(pool)
         .await?;
@@ -246,10 +257,10 @@ impl ChannelRepository {
         user_id: &Uuid,
     ) -> Result<ChannelMember, sqlx::Error> {
         let row: ChannelMemberRow = sqlx::query_as(
-            r#"SELECT * FROM channel_members WHERE channel_id = ? AND user_id = ?"#,
+            r#"SELECT id, channel_id, user_id, joined_at, last_read_at FROM channel_members WHERE channel_id = $1 AND user_id = $2"#,
         )
-        .bind(channel_id.to_string())
-        .bind(user_id.to_string())
+        .bind(channel_id)
+        .bind(user_id)
         .fetch_one(pool)
         .await?;
 
@@ -258,9 +269,9 @@ impl ChannelRepository {
 
     pub async fn find_members(pool: &PgPool, channel_id: &Uuid) -> Result<Vec<ChannelMember>, sqlx::Error> {
         let rows: Vec<ChannelMemberRow> = sqlx::query_as(
-            r#"SELECT * FROM channel_members WHERE channel_id = ? ORDER BY joined_at"#,
+            r#"SELECT id, channel_id, user_id, joined_at, last_read_at FROM channel_members WHERE channel_id = $1 ORDER BY joined_at"#,
         )
-        .bind(channel_id.to_string())
+        .bind(channel_id)
         .fetch_all(pool)
         .await?;
 
@@ -273,10 +284,10 @@ impl ChannelRepository {
         user_id: &Uuid,
     ) -> Result<(), sqlx::Error> {
         sqlx::query(
-            r#"DELETE FROM channel_members WHERE channel_id = ? AND user_id = ?"#,
+            r#"DELETE FROM channel_members WHERE channel_id = $1 AND user_id = $2"#,
         )
-        .bind(channel_id.to_string())
-        .bind(user_id.to_string())
+        .bind(channel_id)
+        .bind(user_id)
         .execute(pool)
         .await?;
 
@@ -289,10 +300,10 @@ impl ChannelRepository {
         user_id: &Uuid,
     ) -> Result<bool, sqlx::Error> {
         let result: (i64,) = sqlx::query_as(
-            r#"SELECT COUNT(*) FROM channel_members WHERE channel_id = ? AND user_id = ?"#,
+            r#"SELECT COUNT(*) FROM channel_members WHERE channel_id = $1 AND user_id = $2"#,
         )
-        .bind(channel_id.to_string())
-        .bind(user_id.to_string())
+        .bind(channel_id)
+        .bind(user_id)
         .fetch_one(pool)
         .await?;
 
@@ -304,14 +315,14 @@ impl ChannelRepository {
         channel_id: &Uuid,
         user_id: &Uuid,
     ) -> Result<(), sqlx::Error> {
-        let now = Utc::now().to_rfc3339();
+        let now = Utc::now();
 
         sqlx::query(
-            r#"UPDATE channel_members SET last_read_at = ? WHERE channel_id = ? AND user_id = ?"#,
+            r#"UPDATE channel_members SET last_read_at = $1 WHERE channel_id = $2 AND user_id = $3"#,
         )
         .bind(&now)
-        .bind(channel_id.to_string())
-        .bind(user_id.to_string())
+        .bind(channel_id)
+        .bind(user_id)
         .execute(pool)
         .await?;
 
@@ -327,13 +338,13 @@ impl ChannelRepository {
             r#"
             SELECT COUNT(*) FROM messages m
             INNER JOIN channel_members cm ON m.channel_id = cm.channel_id
-            WHERE m.channel_id = ?
-            AND cm.user_id = ?
+            WHERE m.channel_id = $1
+            AND cm.user_id = $2
             AND (cm.last_read_at IS NULL OR m.created_at > cm.last_read_at)
             "#,
         )
-        .bind(channel_id.to_string())
-        .bind(user_id.to_string())
+        .bind(channel_id)
+        .bind(user_id)
         .fetch_one(pool)
         .await?;
 

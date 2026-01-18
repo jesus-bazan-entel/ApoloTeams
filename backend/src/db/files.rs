@@ -7,29 +7,29 @@ use uuid::Uuid;
 
 #[derive(Debug, FromRow)]
 pub struct FileAttachmentRow {
-    pub id: String,
-    pub message_id: Option<String>,
-    pub channel_id: String,
-    pub uploader_id: String,
+    pub id: Uuid,
+    pub message_id: Option<Uuid>,
+    pub channel_id: Uuid,
+    pub uploader_id: Uuid,
     pub filename: String,
     pub file_size: i64,
     pub mime_type: String,
     pub storage_path: String,
-    pub created_at: String,
+    pub created_at: DateTime<Utc>,
 }
 
 impl From<FileAttachmentRow> for FileAttachment {
     fn from(row: FileAttachmentRow) -> Self {
         FileAttachment {
-            id: Uuid::parse_str(&row.id).unwrap_or_default(),
-            message_id: row.message_id.and_then(|s| Uuid::parse_str(&s).ok()),
-            channel_id: Uuid::parse_str(&row.channel_id).unwrap_or_default(),
-            uploader_id: Uuid::parse_str(&row.uploader_id).unwrap_or_default(),
+            id: row.id,
+            message_id: row.message_id,
+            channel_id: row.channel_id,
+            uploader_id: row.uploader_id,
             filename: row.filename,
             file_size: row.file_size,
             mime_type: row.mime_type,
             storage_path: row.storage_path,
-            created_at: DateTime::parse_from_rfc3339(&row.created_at).unwrap().with_timezone(&Utc),
+            created_at: row.created_at,
         }
     }
 }
@@ -46,18 +46,18 @@ impl FileRepository {
         mime_type: &str,
         storage_path: &str,
     ) -> Result<FileAttachment, sqlx::Error> {
-        let id = Uuid::new_v4().to_string();
-        let now = Utc::now().to_rfc3339();
+        let id = Uuid::new_v4();
+        let now = Utc::now();
 
         sqlx::query(
             r#"
             INSERT INTO file_attachments (id, channel_id, uploader_id, filename, file_size, mime_type, storage_path, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             "#,
         )
         .bind(&id)
-        .bind(channel_id.to_string())
-        .bind(uploader_id.to_string())
+        .bind(channel_id)
+        .bind(uploader_id)
         .bind(filename)
         .bind(file_size)
         .bind(mime_type)
@@ -66,14 +66,14 @@ impl FileRepository {
         .execute(pool)
         .await?;
 
-        Self::find_by_id(pool, &Uuid::parse_str(&id).unwrap()).await
+        Self::find_by_id(pool, &id).await
     }
 
     pub async fn find_by_id(pool: &PgPool, id: &Uuid) -> Result<FileAttachment, sqlx::Error> {
         let row: FileAttachmentRow = sqlx::query_as(
-            r#"SELECT * FROM file_attachments WHERE id = ?"#,
+            r#"SELECT id, message_id, channel_id, uploader_id, filename, file_size, mime_type, storage_path, created_at FROM file_attachments WHERE id = $1"#,
         )
-        .bind(id.to_string())
+        .bind(id)
         .fetch_one(pool)
         .await?;
 
@@ -82,9 +82,9 @@ impl FileRepository {
 
     pub async fn find_by_message(pool: &PgPool, message_id: &Uuid) -> Result<Vec<FileAttachment>, sqlx::Error> {
         let rows: Vec<FileAttachmentRow> = sqlx::query_as(
-            r#"SELECT * FROM file_attachments WHERE message_id = ? ORDER BY created_at"#,
+            r#"SELECT id, message_id, channel_id, uploader_id, filename, file_size, mime_type, storage_path, created_at FROM file_attachments WHERE message_id = $1 ORDER BY created_at"#,
         )
-        .bind(message_id.to_string())
+        .bind(message_id)
         .fetch_all(pool)
         .await?;
 
@@ -98,9 +98,9 @@ impl FileRepository {
         offset: i64,
     ) -> Result<Vec<FileAttachment>, sqlx::Error> {
         let rows: Vec<FileAttachmentRow> = sqlx::query_as(
-            r#"SELECT * FROM file_attachments WHERE channel_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?"#,
+            r#"SELECT id, message_id, channel_id, uploader_id, filename, file_size, mime_type, storage_path, created_at FROM file_attachments WHERE channel_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3"#,
         )
-        .bind(channel_id.to_string())
+        .bind(channel_id)
         .bind(limit)
         .bind(offset)
         .fetch_all(pool)
@@ -115,10 +115,10 @@ impl FileRepository {
         message_id: &Uuid,
     ) -> Result<(), sqlx::Error> {
         sqlx::query(
-            r#"UPDATE file_attachments SET message_id = ? WHERE id = ?"#,
+            r#"UPDATE file_attachments SET message_id = $1 WHERE id = $2"#,
         )
-        .bind(message_id.to_string())
-        .bind(file_id.to_string())
+        .bind(message_id)
+        .bind(file_id)
         .execute(pool)
         .await?;
 
@@ -128,8 +128,8 @@ impl FileRepository {
     pub async fn delete(pool: &PgPool, id: &Uuid) -> Result<FileAttachment, sqlx::Error> {
         let file = Self::find_by_id(pool, id).await?;
 
-        sqlx::query(r#"DELETE FROM file_attachments WHERE id = ?"#)
-            .bind(id.to_string())
+        sqlx::query(r#"DELETE FROM file_attachments WHERE id = $1"#)
+            .bind(id)
             .execute(pool)
             .await?;
 
@@ -142,10 +142,10 @@ impl FileRepository {
         user_id: &Uuid,
     ) -> Result<bool, sqlx::Error> {
         let result: (i64,) = sqlx::query_as(
-            r#"SELECT COUNT(*) FROM file_attachments WHERE id = ? AND uploader_id = ?"#,
+            r#"SELECT COUNT(*) FROM file_attachments WHERE id = $1 AND uploader_id = $2"#,
         )
-        .bind(file_id.to_string())
-        .bind(user_id.to_string())
+        .bind(file_id)
+        .bind(user_id)
         .fetch_one(pool)
         .await?;
 

@@ -2,12 +2,12 @@
 
 use chrono::{DateTime, Utc};
 use shared::models::{User, UserStatus};
-use sqlx::{FromRow, PgPool};
+use sqlx::{FromRow, PgPool, Row};
 use uuid::Uuid;
 
 #[derive(Debug, FromRow)]
 pub struct UserRow {
-    pub id: String,
+    pub id: Uuid,
     pub email: String,
     pub username: String,
     pub display_name: String,
@@ -15,15 +15,15 @@ pub struct UserRow {
     pub avatar_url: Option<String>,
     pub status: String,
     pub status_message: Option<String>,
-    pub last_seen: Option<String>,
-    pub created_at: String,
-    pub updated_at: String,
+    pub last_seen: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 impl From<UserRow> for User {
     fn from(row: UserRow) -> Self {
         User {
-            id: Uuid::parse_str(&row.id).unwrap_or_default(),
+            id: row.id,
             email: row.email,
             username: row.username,
             display_name: row.display_name,
@@ -31,9 +31,9 @@ impl From<UserRow> for User {
             avatar_url: row.avatar_url,
             status: serde_json::from_str(&format!("\"{}\"", row.status)).unwrap_or_default(),
             status_message: row.status_message,
-            last_seen: row.last_seen.and_then(|s| DateTime::parse_from_rfc3339(&s).ok().map(|dt| dt.with_timezone(&Utc))),
-            created_at: DateTime::parse_from_rfc3339(&row.created_at).unwrap().with_timezone(&Utc),
-            updated_at: DateTime::parse_from_rfc3339(&row.updated_at).unwrap().with_timezone(&Utc),
+            last_seen: row.last_seen,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
         }
     }
 }
@@ -48,14 +48,14 @@ impl UserRepository {
         display_name: &str,
         password_hash: &str,
     ) -> Result<User, sqlx::Error> {
-        let id = Uuid::new_v4().to_string();
-        let now = Utc::now().to_rfc3339();
+        let id = Uuid::new_v4();
+        let now = Utc::now();
         let status = "offline";
 
         sqlx::query(
             r#"
             INSERT INTO users (id, email, username, display_name, password_hash, status, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             "#,
         )
         .bind(&id)
@@ -69,14 +69,14 @@ impl UserRepository {
         .execute(pool)
         .await?;
 
-        Self::find_by_id(pool, &Uuid::parse_str(&id).unwrap()).await
+        Self::find_by_id(pool, &id).await
     }
 
     pub async fn find_by_id(pool: &PgPool, id: &Uuid) -> Result<User, sqlx::Error> {
         let row: UserRow = sqlx::query_as(
-            r#"SELECT * FROM users WHERE id = ?"#,
+            r#"SELECT id, email, username, display_name, password_hash, avatar_url, status, status_message, last_seen, created_at, updated_at FROM users WHERE id = $1"#,
         )
-        .bind(id.to_string())
+        .bind(id)
         .fetch_one(pool)
         .await?;
 
@@ -85,7 +85,7 @@ impl UserRepository {
 
     pub async fn find_by_email(pool: &PgPool, email: &str) -> Result<User, sqlx::Error> {
         let row: UserRow = sqlx::query_as(
-            r#"SELECT * FROM users WHERE email = ?"#,
+            r#"SELECT id, email, username, display_name, password_hash, avatar_url, status, status_message, last_seen, created_at, updated_at FROM users WHERE email = $1"#,
         )
         .bind(email)
         .fetch_one(pool)
@@ -96,7 +96,7 @@ impl UserRepository {
 
     pub async fn find_by_username(pool: &PgPool, username: &str) -> Result<User, sqlx::Error> {
         let row: UserRow = sqlx::query_as(
-            r#"SELECT * FROM users WHERE username = ?"#,
+            r#"SELECT id, email, username, display_name, password_hash, avatar_url, status, status_message, last_seen, created_at, updated_at FROM users WHERE username = $1"#,
         )
         .bind(username)
         .fetch_one(pool)
@@ -113,37 +113,54 @@ impl UserRepository {
         status: Option<UserStatus>,
         status_message: Option<&str>,
     ) -> Result<User, sqlx::Error> {
-        let now = Utc::now().to_rfc3339();
-        let mut query = String::from("UPDATE users SET updated_at = ?");
-        let mut params: Vec<String> = vec![now.clone()];
+        let now = Utc::now();
+        
+        // Build dynamic query for PostgreSQL
+        let mut set_clauses = vec!["updated_at = $1".to_string()];
+        let mut param_index = 2;
+        
+        if display_name.is_some() {
+            set_clauses.push(format!("display_name = ${}", param_index));
+            param_index += 1;
+        }
+        
+        if avatar_url.is_some() {
+            set_clauses.push(format!("avatar_url = ${}", param_index));
+            param_index += 1;
+        }
+        
+        if status.is_some() {
+            set_clauses.push(format!("status = ${}", param_index));
+            param_index += 1;
+        }
+        
+        if status_message.is_some() {
+            set_clauses.push(format!("status_message = ${}", param_index));
+            param_index += 1;
+        }
+        
+        let query = format!(
+            "UPDATE users SET {} WHERE id = ${}",
+            set_clauses.join(", "),
+            param_index
+        );
 
+        let mut q = sqlx::query(&query).bind(&now);
+        
         if let Some(name) = display_name {
-            query.push_str(", display_name = ?");
-            params.push(name.to_string());
+            q = q.bind(name);
         }
-
         if let Some(url) = avatar_url {
-            query.push_str(", avatar_url = ?");
-            params.push(url.to_string());
+            q = q.bind(url);
         }
-
         if let Some(s) = status {
-            query.push_str(", status = ?");
-            params.push(serde_json::to_string(&s).unwrap().trim_matches('"').to_string());
+            q = q.bind(serde_json::to_string(&s).unwrap().trim_matches('"').to_string());
         }
-
         if let Some(msg) = status_message {
-            query.push_str(", status_message = ?");
-            params.push(msg.to_string());
+            q = q.bind(msg);
         }
-
-        query.push_str(" WHERE id = ?");
-        params.push(id.to_string());
-
-        let mut q = sqlx::query(&query);
-        for param in &params {
-            q = q.bind(param);
-        }
+        
+        q = q.bind(id);
         q.execute(pool).await?;
 
         Self::find_by_id(pool, id).await
@@ -154,14 +171,14 @@ impl UserRepository {
         id: &Uuid,
         password_hash: &str,
     ) -> Result<(), sqlx::Error> {
-        let now = Utc::now().to_rfc3339();
+        let now = Utc::now();
 
         sqlx::query(
-            r#"UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?"#,
+            r#"UPDATE users SET password_hash = $1, updated_at = $2 WHERE id = $3"#,
         )
         .bind(password_hash)
         .bind(&now)
-        .bind(id.to_string())
+        .bind(id)
         .execute(pool)
         .await?;
 
@@ -169,14 +186,14 @@ impl UserRepository {
     }
 
     pub async fn update_last_seen(pool: &PgPool, id: &Uuid) -> Result<(), sqlx::Error> {
-        let now = Utc::now().to_rfc3339();
+        let now = Utc::now();
 
         sqlx::query(
-            r#"UPDATE users SET last_seen = ?, updated_at = ? WHERE id = ?"#,
+            r#"UPDATE users SET last_seen = $1, updated_at = $2 WHERE id = $3"#,
         )
         .bind(&now)
         .bind(&now)
-        .bind(id.to_string())
+        .bind(id)
         .execute(pool)
         .await?;
 
@@ -193,10 +210,11 @@ impl UserRepository {
 
         let rows: Vec<UserRow> = sqlx::query_as(
             r#"
-            SELECT * FROM users 
-            WHERE username LIKE ? OR display_name LIKE ? OR email LIKE ?
+            SELECT id, email, username, display_name, password_hash, avatar_url, status, status_message, last_seen, created_at, updated_at 
+            FROM users 
+            WHERE username ILIKE $1 OR display_name ILIKE $2 OR email ILIKE $3
             ORDER BY username
-            LIMIT ? OFFSET ?
+            LIMIT $4 OFFSET $5
             "#,
         )
         .bind(&search_pattern)
@@ -212,7 +230,7 @@ impl UserRepository {
 
     pub async fn exists_by_email(pool: &PgPool, email: &str) -> Result<bool, sqlx::Error> {
         let result: (i64,) = sqlx::query_as(
-            r#"SELECT COUNT(*) FROM users WHERE email = ?"#,
+            r#"SELECT COUNT(*) FROM users WHERE email = $1"#,
         )
         .bind(email)
         .fetch_one(pool)
@@ -223,7 +241,7 @@ impl UserRepository {
 
     pub async fn exists_by_username(pool: &PgPool, username: &str) -> Result<bool, sqlx::Error> {
         let result: (i64,) = sqlx::query_as(
-            r#"SELECT COUNT(*) FROM users WHERE username = ?"#,
+            r#"SELECT COUNT(*) FROM users WHERE username = $1"#,
         )
         .bind(username)
         .fetch_one(pool)
