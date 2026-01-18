@@ -3,6 +3,10 @@
 **/*.rs.bk
 Cargo.lock
 
+# Node.js
+node_modules/
+frontend-react/node_modules/
+
 # IDE
 .idea/
 .vscode/
