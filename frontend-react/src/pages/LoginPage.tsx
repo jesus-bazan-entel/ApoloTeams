@@ -30,64 +30,78 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-md">
-        {/* Logo and Title */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-teams-purple to-teams-blue mb-4 shadow-lg">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="white">
-              <path d="M19.5 3h-15C3.12 3 2 4.12 2 5.5v13C2 19.88 3.12 21 4.5 21h15c1.38 0 2.5-1.12 2.5-2.5v-13C22 4.12 20.88 3 19.5 3z"/>
-            </svg>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+          {/* Logo and Title */}
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-12 h-12 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-xl">
+              TS
+            </div>
+            <h1 className="text-2xl font-semibold text-gray-900">TeamStream</h1>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Apolo Teams</h1>
-          <p className="text-gray-600">Sign in to your account</p>
-        </div>
 
-        {/* Login Card */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+          {/* Sign in heading */}
+          <div className="mb-6">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Sign in</h2>
+            <p className="text-gray-600">Use your organizational account</p>
+          </div>
+
+          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl animate-in">
-                <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-                <span className="text-sm">{error}</span>
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                {error}
               </div>
             )}
 
+            {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email
+              <label htmlFor="email" className="block text-xs font-medium text-gray-600 uppercase mb-2">
+                Email Address
               </label>
-              <input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm transition-all duration-200 focus:outline-none focus:border-teams-purple focus:ring-2 focus:ring-teams-purple/20 focus:bg-white"
-                placeholder="you@example.com"
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border-b-2 border-gray-200 focus:border-indigo-600 focus:outline-none transition-colors bg-transparent text-gray-900 placeholder-gray-400"
+                  placeholder="email@example.com"
+                />
+              </div>
             </div>
 
+            {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-xs font-medium text-gray-600 uppercase mb-2">
                 Password
               </label>
               <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
                 <input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm transition-all duration-200 focus:outline-none focus:border-teams-purple focus:ring-2 focus:ring-teams-purple/20 focus:bg-white pr-12"
-                  placeholder="Enter your password"
+                  className="w-full pl-10 pr-12 py-3 border-b-2 border-gray-200 focus:border-indigo-600 focus:outline-none transition-colors bg-transparent text-gray-900 placeholder-gray-400"
+                  placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
                 >
                   {showPassword ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,66 +117,51 @@ function LoginPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 text-teams-purple border-gray-300 rounded focus:ring-teams-purple focus:ring-2"
-                />
-                <span className="ml-2 text-gray-600">Keep me signed in</span>
-              </label>
-              <a href="#" className="font-medium text-teams-purple hover:text-teams-purple-600 transition-colors">
-                Forgot password?
-              </a>
-            </div>
+            {/* Terms */}
+            <p className="text-xs text-gray-500">
+              By continuing, you agree to our <a href="#" className="text-indigo-600 hover:underline">Terms of Service</a> and <a href="#" className="text-indigo-600 hover:underline">Privacy Policy</a>. TeamStream is protected by enterprise-grade security.
+            </p>
 
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-teams-purple to-teams-blue text-white py-3 px-4 rounded-xl font-medium shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
-                <span className="flex items-center justify-center gap-2">
+                <>
                   <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
                   Signing in...
-                </span>
+                </>
               ) : (
-                'Sign in'
+                <>
+                  Sign in
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </>
               )}
             </button>
-          </form>
 
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-500">Don't have an account?</span>
-              </div>
+            {/* Security badge */}
+            <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              Secure enterprise authentication
             </div>
 
-            <div className="mt-6">
-              <Link
-                to="/register"
-                className="w-full inline-flex items-center justify-center bg-white text-teams-purple border-2 border-teams-purple py-3 px-4 rounded-xl font-medium hover:bg-teams-purple-50 transition-all duration-200 active:scale-[0.98]"
-              >
-                Create account
+            {/* Create account link */}
+            <div className="text-center">
+              <Link to="/register" className="text-indigo-600 hover:underline font-medium">
+                No account? Create one!
               </Link>
             </div>
-          </div>
+          </form>
         </div>
-
-        {/* Footer */}
-        <p className="mt-8 text-center text-xs text-gray-500">
-          By signing in, you agree to our{' '}
-          <a href="#" className="text-teams-purple hover:underline">Terms</a>
-          {' '}and{' '}
-          <a href="#" className="text-teams-purple hover:underline">Privacy Policy</a>
-        </p>
       </div>
     </div>
   );
