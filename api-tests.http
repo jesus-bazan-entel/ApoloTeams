@@ -1,0 +1,315 @@
+### ========================================
+### Rust Teams API - REST Client Tests
+### ========================================
+### Instala la extensión "REST Client" en VS Code
+### Luego haz clic en "Send Request" encima de cada petición
+
+@baseUrl = http://127.0.0.1:8080/api/v1
+@contentType = application/json
+
+### ========================================
+### HEALTH CHECK
+### ========================================
+
+### Health Check
+GET {{baseUrl}}/../health
+
+### ========================================
+### AUTHENTICATION
+### ========================================
+
+### Register New User
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "testuser{{$timestamp}}@example.com",
+  "username": "testuser{{$timestamp}}",
+  "display_name": "Test User {{$timestamp}}",
+  "password": "password123"
+}
+
+### Login
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### Logout (requires token)
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### Refresh Token
+POST {{baseUrl}}/auth/refresh
+Content-Type: {{contentType}}
+
+{
+  "refresh_token": "YOUR_REFRESH_TOKEN_HERE"
+}
+
+### ========================================
+### USERS
+### ========================================
+
+### Get Current User (requires token)
+GET {{baseUrl}}/users/me
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### Update Current User (requires token)
+PATCH {{baseUrl}}/users/me
+Content-Type: {{contentType}}
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "display_name": "Updated Name",
+  "status_message": "Available for chat"
+}
+
+### Change Password (requires token)
+PUT {{baseUrl}}/users/me/password
+Content-Type: {{contentType}}
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "current_password": "password123",
+  "new_password": "newpassword123"
+}
+
+### Search Users (requires token)
+GET {{baseUrl}}/users/search?q=test
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### ========================================
+### TEAMS
+### ========================================
+
+### List Teams (requires token)
+GET {{baseUrl}}/teams
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### Create Team (requires token)
+POST {{baseUrl}}/teams
+Content-Type: {{contentType}}
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "name": "My Team",
+  "description": "A team for collaboration"
+}
+
+### Get Team (requires token)
+GET {{baseUrl}}/teams/YOUR_TEAM_ID_HERE
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### Update Team (requires token)
+PATCH {{baseUrl}}/teams/YOUR_TEAM_ID_HERE
+Content-Type: {{contentType}}
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "name": "Updated Team Name",
+  "description": "Updated description"
+}
+
+### Delete Team (requires token)
+DELETE {{baseUrl}}/teams/YOUR_TEAM_ID_HERE
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### List Team Members (requires token)
+GET {{baseUrl}}/teams/YOUR_TEAM_ID_HERE/members
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### ========================================
+### CHANNELS
+### ========================================
+
+### List Channels (requires token)
+GET {{baseUrl}}/channels
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### List Team Channels (requires token)
+GET {{baseUrl}}/teams/YOUR_TEAM_ID_HERE/channels
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### Create Channel (requires token)
+POST {{baseUrl}}/channels
+Content-Type: {{contentType}}
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "team_id": "YOUR_TEAM_ID_HERE",
+  "name": "general",
+  "description": "General discussion",
+  "channel_type": "text"
+}
+
+### Get Channel (requires token)
+GET {{baseUrl}}/channels/YOUR_CHANNEL_ID_HERE
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### List Channel Members (requires token)
+GET {{baseUrl}}/channels/YOUR_CHANNEL_ID_HERE/members
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### Mark Channel as Read (requires token)
+POST {{baseUrl}}/channels/YOUR_CHANNEL_ID_HERE/read
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### ========================================
+### MESSAGES
+### ========================================
+
+### List Messages (requires token)
+GET {{baseUrl}}/channels/YOUR_CHANNEL_ID_HERE/messages?limit=50
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### Send Message (requires token)
+POST {{baseUrl}}/channels/YOUR_CHANNEL_ID_HERE/messages
+Content-Type: {{contentType}}
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "content": "Hello, world!"
+}
+
+### Update Message (requires token)
+PATCH {{baseUrl}}/channels/YOUR_CHANNEL_ID_HERE/messages/YOUR_MESSAGE_ID_HERE
+Content-Type: {{contentType}}
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "content": "Updated message"
+}
+
+### Delete Message (requires token)
+DELETE {{baseUrl}}/channels/YOUR_CHANNEL_ID_HERE/messages/YOUR_MESSAGE_ID_HERE
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### Add Reaction (requires token)
+POST {{baseUrl}}/channels/YOUR_CHANNEL_ID_HERE/messages/YOUR_MESSAGE_ID_HERE/reactions
+Content-Type: {{contentType}}
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "emoji": "👍"
+}
+
+### Remove Reaction (requires token)
+DELETE {{baseUrl}}/channels/YOUR_CHANNEL_ID_HERE/messages/YOUR_MESSAGE_ID_HERE/reactions/👍
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### ========================================
+### CALLS
+### ========================================
+
+### Start Call (requires token)
+POST {{baseUrl}}/calls
+Content-Type: {{contentType}}
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "channel_id": "YOUR_CHANNEL_ID_HERE",
+  "call_type": "video"
+}
+
+### Join Call (requires token)
+POST {{baseUrl}}/calls/YOUR_CALL_ID_HERE/join
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### Leave Call (requires token)
+POST {{baseUrl}}/calls/YOUR_CALL_ID_HERE/leave
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### End Call (requires token)
+POST {{baseUrl}}/calls/YOUR_CALL_ID_HERE/end
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### ========================================
+### SEARCH
+### ========================================
+
+### Search Messages (requires token)
+GET {{baseUrl}}/search/messages?q=hello
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### ========================================
+### NOTIFICATIONS
+### ========================================
+
+### List Notifications (requires token)
+GET {{baseUrl}}/notifications
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### Mark Notification as Read (requires token)
+POST {{baseUrl}}/notifications/YOUR_NOTIFICATION_ID_HERE/read
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### Mark All Notifications as Read (requires token)
+POST {{baseUrl}}/notifications/read-all
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### ========================================
+### QUICK TEST WORKFLOW
+### ========================================
+
+### Step 1: Register a new user
+# @name register
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "quicktest{{$timestamp}}@example.com",
+  "username": "quicktest{{$timestamp}}",
+  "display_name": "Quick Test User",
+  "password": "password123"
+}
+
+### Step 2: Login with the registered user
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "quicktest{{$timestamp}}@example.com",
+  "password": "password123"
+}
+
+### Step 3: Get current user (copy token from login response)
+GET {{baseUrl}}/users/me
+Authorization: Bearer {{login.response.body.$.access_token}}
+
+### Step 4: Create a team
+# @name createTeam
+POST {{baseUrl}}/teams
+Content-Type: {{contentType}}
+Authorization: Bearer {{login.response.body.$.access_token}}
+
+{
+  "name": "Test Team",
+  "description": "A test team"
+}
+
+### Step 5: Create a channel
+# @name createChannel
+POST {{baseUrl}}/channels
+Content-Type: {{contentType}}
+Authorization: Bearer {{login.response.body.$.access_token}}
+
+{
+  "team_id": "{{createTeam.response.body.$.id}}",
+  "name": "general",
+  "description": "General channel",
+  "channel_type": "text"
+}
+
+### Step 6: Send a message
+POST {{baseUrl}}/channels/{{createChannel.response.body.$.id}}/messages
+Content-Type: {{contentType}}
+Authorization: Bearer {{login.response.body.$.access_token}}
+
+{
+  "content": "Hello from REST Client!"
+}
