@@ -2,7 +2,7 @@
 
 use chrono::{DateTime, Utc};
 use shared::models::{Notification, NotificationType};
-use sqlx::{FromRow, SqlitePool};
+use sqlx::{FromRow, PgPool};
 use uuid::Uuid;
 
 #[derive(Debug, FromRow)]
@@ -36,7 +36,7 @@ pub struct NotificationRepository;
 
 impl NotificationRepository {
     pub async fn create(
-        pool: &SqlitePool,
+        pool: &PgPool,
         user_id: &Uuid,
         title: &str,
         body: &str,
@@ -66,7 +66,7 @@ impl NotificationRepository {
         Self::find_by_id(pool, &Uuid::parse_str(&id).unwrap()).await
     }
 
-    pub async fn find_by_id(pool: &SqlitePool, id: &Uuid) -> Result<Notification, sqlx::Error> {
+    pub async fn find_by_id(pool: &PgPool, id: &Uuid) -> Result<Notification, sqlx::Error> {
         let row: NotificationRow = sqlx::query_as(
             r#"SELECT * FROM notifications WHERE id = ?"#,
         )
@@ -78,7 +78,7 @@ impl NotificationRepository {
     }
 
     pub async fn find_by_user(
-        pool: &SqlitePool,
+        pool: &PgPool,
         user_id: &Uuid,
         unread_only: bool,
         limit: i64,
@@ -110,7 +110,7 @@ impl NotificationRepository {
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
 
-    pub async fn mark_as_read(pool: &SqlitePool, id: &Uuid) -> Result<(), sqlx::Error> {
+    pub async fn mark_as_read(pool: &PgPool, id: &Uuid) -> Result<(), sqlx::Error> {
         sqlx::query(
             r#"UPDATE notifications SET read = ? WHERE id = ?"#,
         )
@@ -122,7 +122,7 @@ impl NotificationRepository {
         Ok(())
     }
 
-    pub async fn mark_all_as_read(pool: &SqlitePool, user_id: &Uuid) -> Result<(), sqlx::Error> {
+    pub async fn mark_all_as_read(pool: &PgPool, user_id: &Uuid) -> Result<(), sqlx::Error> {
         sqlx::query(
             r#"UPDATE notifications SET read = ? WHERE user_id = ? AND read = ?"#,
         )
@@ -135,7 +135,7 @@ impl NotificationRepository {
         Ok(())
     }
 
-    pub async fn get_unread_count(pool: &SqlitePool, user_id: &Uuid) -> Result<i64, sqlx::Error> {
+    pub async fn get_unread_count(pool: &PgPool, user_id: &Uuid) -> Result<i64, sqlx::Error> {
         let result: (i64,) = sqlx::query_as(
             r#"SELECT COUNT(*) FROM notifications WHERE user_id = ? AND read = ?"#,
         )
@@ -147,7 +147,7 @@ impl NotificationRepository {
         Ok(result.0)
     }
 
-    pub async fn delete(pool: &SqlitePool, id: &Uuid) -> Result<(), sqlx::Error> {
+    pub async fn delete(pool: &PgPool, id: &Uuid) -> Result<(), sqlx::Error> {
         sqlx::query(r#"DELETE FROM notifications WHERE id = ?"#)
             .bind(id.to_string())
             .execute(pool)
@@ -156,7 +156,7 @@ impl NotificationRepository {
         Ok(())
     }
 
-    pub async fn delete_old(pool: &SqlitePool, days: i64) -> Result<u64, sqlx::Error> {
+    pub async fn delete_old(pool: &PgPool, days: i64) -> Result<u64, sqlx::Error> {
         let cutoff = (Utc::now() - chrono::Duration::days(days)).to_rfc3339();
 
         let result = sqlx::query(

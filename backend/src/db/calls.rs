@@ -2,7 +2,7 @@
 
 use chrono::{DateTime, Utc};
 use shared::models::{Call, CallParticipant, CallStatus, CallType};
-use sqlx::{FromRow, SqlitePool};
+use sqlx::{FromRow, PgPool};
 use uuid::Uuid;
 
 #[derive(Debug, FromRow)]
@@ -59,7 +59,7 @@ pub struct CallRepository;
 
 impl CallRepository {
     pub async fn create(
-        pool: &SqlitePool,
+        pool: &PgPool,
         channel_id: &Uuid,
         initiator_id: &Uuid,
         call_type: CallType,
@@ -90,7 +90,7 @@ impl CallRepository {
         Self::find_by_id(pool, &Uuid::parse_str(&id).unwrap()).await
     }
 
-    pub async fn find_by_id(pool: &SqlitePool, id: &Uuid) -> Result<Call, sqlx::Error> {
+    pub async fn find_by_id(pool: &PgPool, id: &Uuid) -> Result<Call, sqlx::Error> {
         let row: CallRow = sqlx::query_as(
             r#"SELECT * FROM calls WHERE id = ?"#,
         )
@@ -101,7 +101,7 @@ impl CallRepository {
         Ok(row.into())
     }
 
-    pub async fn find_active_by_channel(pool: &SqlitePool, channel_id: &Uuid) -> Result<Option<Call>, sqlx::Error> {
+    pub async fn find_active_by_channel(pool: &PgPool, channel_id: &Uuid) -> Result<Option<Call>, sqlx::Error> {
         let row: Option<CallRow> = sqlx::query_as(
             r#"SELECT * FROM calls WHERE channel_id = ? AND status IN ('ringing', 'in_progress')"#,
         )
@@ -113,7 +113,7 @@ impl CallRepository {
     }
 
     pub async fn update_status(
-        pool: &SqlitePool,
+        pool: &PgPool,
         id: &Uuid,
         status: CallStatus,
     ) -> Result<Call, sqlx::Error> {
@@ -147,7 +147,7 @@ impl CallRepository {
     }
 
     pub async fn add_participant(
-        pool: &SqlitePool,
+        pool: &PgPool,
         call_id: &Uuid,
         user_id: &Uuid,
         is_video_enabled: bool,
@@ -174,7 +174,7 @@ impl CallRepository {
     }
 
     pub async fn find_participant(
-        pool: &SqlitePool,
+        pool: &PgPool,
         call_id: &Uuid,
         user_id: &Uuid,
     ) -> Result<CallParticipant, sqlx::Error> {
@@ -189,7 +189,7 @@ impl CallRepository {
         Ok(row.into())
     }
 
-    pub async fn find_participants(pool: &SqlitePool, call_id: &Uuid) -> Result<Vec<CallParticipant>, sqlx::Error> {
+    pub async fn find_participants(pool: &PgPool, call_id: &Uuid) -> Result<Vec<CallParticipant>, sqlx::Error> {
         let rows: Vec<CallParticipantRow> = sqlx::query_as(
             r#"SELECT * FROM call_participants WHERE call_id = ? AND left_at IS NULL ORDER BY joined_at"#,
         )
@@ -201,7 +201,7 @@ impl CallRepository {
     }
 
     pub async fn update_participant(
-        pool: &SqlitePool,
+        pool: &PgPool,
         call_id: &Uuid,
         user_id: &Uuid,
         is_muted: Option<bool>,
@@ -238,7 +238,7 @@ impl CallRepository {
     }
 
     pub async fn remove_participant(
-        pool: &SqlitePool,
+        pool: &PgPool,
         call_id: &Uuid,
         user_id: &Uuid,
     ) -> Result<(), sqlx::Error> {
@@ -257,7 +257,7 @@ impl CallRepository {
     }
 
     pub async fn is_participant(
-        pool: &SqlitePool,
+        pool: &PgPool,
         call_id: &Uuid,
         user_id: &Uuid,
     ) -> Result<bool, sqlx::Error> {
@@ -272,7 +272,7 @@ impl CallRepository {
         Ok(result.0 > 0)
     }
 
-    pub async fn get_participant_count(pool: &SqlitePool, call_id: &Uuid) -> Result<i64, sqlx::Error> {
+    pub async fn get_participant_count(pool: &PgPool, call_id: &Uuid) -> Result<i64, sqlx::Error> {
         let result: (i64,) = sqlx::query_as(
             r#"SELECT COUNT(*) FROM call_participants WHERE call_id = ? AND left_at IS NULL"#,
         )

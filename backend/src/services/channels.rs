@@ -6,18 +6,18 @@ use shared::dto::{
 };
 use shared::error::AppError;
 use shared::models::ChannelType;
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::db::{ChannelRepository, MessageRepository, TeamRepository, UserRepository};
 
 pub struct ChannelService {
-    pool: Arc<SqlitePool>,
+    pool: Arc<PgPool>,
 }
 
 impl ChannelService {
-    pub fn new(pool: Arc<SqlitePool>) -> Self {
+    pub fn new(pool: Arc<PgPool>) -> Self {
         Self { pool }
     }
 

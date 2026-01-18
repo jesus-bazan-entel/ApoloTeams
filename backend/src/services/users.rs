@@ -3,18 +3,18 @@
 use shared::dto::{UpdateUserRequest, UserResponse};
 use shared::error::AppError;
 use shared::models::UserStatus;
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::db::UserRepository;
 
 pub struct UserService {
-    pool: Arc<SqlitePool>,
+    pool: Arc<PgPool>,
 }
 
 impl UserService {
-    pub fn new(pool: Arc<SqlitePool>) -> Self {
+    pub fn new(pool: Arc<PgPool>) -> Self {
         Self { pool }
     }
 

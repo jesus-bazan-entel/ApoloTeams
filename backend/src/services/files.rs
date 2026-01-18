@@ -2,7 +2,7 @@
 
 use shared::dto::{FileAttachmentResponse, UploadFileResponse};
 use shared::error::AppError;
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 use std::path::Path;
 use std::sync::Arc;
 use tokio::fs;
@@ -13,12 +13,12 @@ use crate::config::AppConfig;
 use crate::db::{ChannelRepository, FileRepository};
 
 pub struct FileService {
-    pool: Arc<SqlitePool>,
+    pool: Arc<PgPool>,
     config: Arc<AppConfig>,
 }
 
 impl FileService {
-    pub fn new(pool: Arc<SqlitePool>, config: Arc<AppConfig>) -> Self {
+    pub fn new(pool: Arc<PgPool>, config: Arc<AppConfig>) -> Self {
         Self { pool, config }
     }
 

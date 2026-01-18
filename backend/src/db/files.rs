@@ -2,7 +2,7 @@
 
 use chrono::{DateTime, Utc};
 use shared::models::FileAttachment;
-use sqlx::{FromRow, SqlitePool};
+use sqlx::{FromRow, PgPool};
 use uuid::Uuid;
 
 #[derive(Debug, FromRow)]
@@ -38,7 +38,7 @@ pub struct FileRepository;
 
 impl FileRepository {
     pub async fn create(
-        pool: &SqlitePool,
+        pool: &PgPool,
         channel_id: &Uuid,
         uploader_id: &Uuid,
         filename: &str,
@@ -69,7 +69,7 @@ impl FileRepository {
         Self::find_by_id(pool, &Uuid::parse_str(&id).unwrap()).await
     }
 
-    pub async fn find_by_id(pool: &SqlitePool, id: &Uuid) -> Result<FileAttachment, sqlx::Error> {
+    pub async fn find_by_id(pool: &PgPool, id: &Uuid) -> Result<FileAttachment, sqlx::Error> {
         let row: FileAttachmentRow = sqlx::query_as(
             r#"SELECT * FROM file_attachments WHERE id = ?"#,
         )
@@ -80,7 +80,7 @@ impl FileRepository {
         Ok(row.into())
     }
 
-    pub async fn find_by_message(pool: &SqlitePool, message_id: &Uuid) -> Result<Vec<FileAttachment>, sqlx::Error> {
+    pub async fn find_by_message(pool: &PgPool, message_id: &Uuid) -> Result<Vec<FileAttachment>, sqlx::Error> {
         let rows: Vec<FileAttachmentRow> = sqlx::query_as(
             r#"SELECT * FROM file_attachments WHERE message_id = ? ORDER BY created_at"#,
         )
@@ -92,7 +92,7 @@ impl FileRepository {
     }
 
     pub async fn find_by_channel(
-        pool: &SqlitePool,
+        pool: &PgPool,
         channel_id: &Uuid,
         limit: i64,
         offset: i64,
@@ -110,7 +110,7 @@ impl FileRepository {
     }
 
     pub async fn attach_to_message(
-        pool: &SqlitePool,
+        pool: &PgPool,
         file_id: &Uuid,
         message_id: &Uuid,
     ) -> Result<(), sqlx::Error> {
@@ -125,7 +125,7 @@ impl FileRepository {
         Ok(())
     }
 
-    pub async fn delete(pool: &SqlitePool, id: &Uuid) -> Result<FileAttachment, sqlx::Error> {
+    pub async fn delete(pool: &PgPool, id: &Uuid) -> Result<FileAttachment, sqlx::Error> {
         let file = Self::find_by_id(pool, id).await?;
 
         sqlx::query(r#"DELETE FROM file_attachments WHERE id = ?"#)
@@ -137,7 +137,7 @@ impl FileRepository {
     }
 
     pub async fn is_owner(
-        pool: &SqlitePool,
+        pool: &PgPool,
         file_id: &Uuid,
         user_id: &Uuid,
     ) -> Result<bool, sqlx::Error> {

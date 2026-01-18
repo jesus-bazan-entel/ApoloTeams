@@ -9,7 +9,7 @@ pub mod files;
 pub mod calls;
 pub mod notifications;
 
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 use std::sync::Arc;
 
 use crate::config::AppConfig;
@@ -27,7 +27,7 @@ pub struct Services {
 }
 
 impl Services {
-    pub fn new(pool: SqlitePool, config: AppConfig) -> Self {
+    pub fn new(pool: PgPool, config: AppConfig) -> Self {
         let pool = Arc::new(pool);
         let config = Arc::new(config);
 

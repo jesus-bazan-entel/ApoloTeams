@@ -2,7 +2,7 @@
 
 use chrono::{DateTime, Utc};
 use shared::models::{Team, TeamMember, TeamRole};
-use sqlx::{FromRow, SqlitePool};
+use sqlx::{FromRow, PgPool};
 use uuid::Uuid;
 
 #[derive(Debug, FromRow)]
@@ -55,7 +55,7 @@ pub struct TeamRepository;
 
 impl TeamRepository {
     pub async fn create(
-        pool: &SqlitePool,
+        pool: &PgPool,
         name: &str,
         description: Option<&str>,
         avatar_url: Option<&str>,
@@ -99,7 +99,7 @@ impl TeamRepository {
         Self::find_by_id(pool, &Uuid::parse_str(&id).unwrap()).await
     }
 
-    pub async fn find_by_id(pool: &SqlitePool, id: &Uuid) -> Result<Team, sqlx::Error> {
+    pub async fn find_by_id(pool: &PgPool, id: &Uuid) -> Result<Team, sqlx::Error> {
         let row: TeamRow = sqlx::query_as(
             r#"SELECT * FROM teams WHERE id = ?"#,
         )
@@ -110,7 +110,7 @@ impl TeamRepository {
         Ok(row.into())
     }
 
-    pub async fn find_by_user(pool: &SqlitePool, user_id: &Uuid) -> Result<Vec<Team>, sqlx::Error> {
+    pub async fn find_by_user(pool: &PgPool, user_id: &Uuid) -> Result<Vec<Team>, sqlx::Error> {
         let rows: Vec<TeamRow> = sqlx::query_as(
             r#"
             SELECT t.* FROM teams t
@@ -127,7 +127,7 @@ impl TeamRepository {
     }
 
     pub async fn update(
-        pool: &SqlitePool,
+        pool: &PgPool,
         id: &Uuid,
         name: Option<&str>,
         description: Option<&str>,
@@ -164,7 +164,7 @@ impl TeamRepository {
         Self::find_by_id(pool, id).await
     }
 
-    pub async fn delete(pool: &SqlitePool, id: &Uuid) -> Result<(), sqlx::Error> {
+    pub async fn delete(pool: &PgPool, id: &Uuid) -> Result<(), sqlx::Error> {
         sqlx::query(r#"DELETE FROM teams WHERE id = ?"#)
             .bind(id.to_string())
             .execute(pool)
@@ -173,7 +173,7 @@ impl TeamRepository {
         Ok(())
     }
 
-    pub async fn get_member_count(pool: &SqlitePool, team_id: &Uuid) -> Result<i64, sqlx::Error> {
+    pub async fn get_member_count(pool: &PgPool, team_id: &Uuid) -> Result<i64, sqlx::Error> {
         let result: (i64,) = sqlx::query_as(
             r#"SELECT COUNT(*) FROM team_members WHERE team_id = ?"#,
         )
@@ -185,7 +185,7 @@ impl TeamRepository {
     }
 
     pub async fn add_member(
-        pool: &SqlitePool,
+        pool: &PgPool,
         team_id: &Uuid,
         user_id: &Uuid,
         role: TeamRole,
@@ -212,7 +212,7 @@ impl TeamRepository {
     }
 
     pub async fn find_member(
-        pool: &SqlitePool,
+        pool: &PgPool,
         team_id: &Uuid,
         user_id: &Uuid,
     ) -> Result<TeamMember, sqlx::Error> {
@@ -227,7 +227,7 @@ impl TeamRepository {
         Ok(row.into())
     }
 
-    pub async fn find_members(pool: &SqlitePool, team_id: &Uuid) -> Result<Vec<TeamMember>, sqlx::Error> {
+    pub async fn find_members(pool: &PgPool, team_id: &Uuid) -> Result<Vec<TeamMember>, sqlx::Error> {
         let rows: Vec<TeamMemberRow> = sqlx::query_as(
             r#"SELECT * FROM team_members WHERE team_id = ? ORDER BY joined_at"#,
         )
@@ -239,7 +239,7 @@ impl TeamRepository {
     }
 
     pub async fn update_member_role(
-        pool: &SqlitePool,
+        pool: &PgPool,
         team_id: &Uuid,
         user_id: &Uuid,
         role: TeamRole,
@@ -259,7 +259,7 @@ impl TeamRepository {
     }
 
     pub async fn remove_member(
-        pool: &SqlitePool,
+        pool: &PgPool,
         team_id: &Uuid,
         user_id: &Uuid,
     ) -> Result<(), sqlx::Error> {
@@ -275,7 +275,7 @@ impl TeamRepository {
     }
 
     pub async fn is_member(
-        pool: &SqlitePool,
+        pool: &PgPool,
         team_id: &Uuid,
         user_id: &Uuid,
     ) -> Result<bool, sqlx::Error> {
@@ -291,7 +291,7 @@ impl TeamRepository {
     }
 
     pub async fn get_user_role(
-        pool: &SqlitePool,
+        pool: &PgPool,
         team_id: &Uuid,
         user_id: &Uuid,
     ) -> Result<Option<TeamRole>, sqlx::Error> {

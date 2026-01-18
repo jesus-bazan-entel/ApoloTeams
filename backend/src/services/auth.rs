@@ -9,7 +9,7 @@ use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation}
 use serde::{Deserialize, Serialize};
 use shared::dto::{AuthResponse, LoginRequest, RegisterRequest, UserResponse};
 use shared::error::AppError;
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -25,12 +25,12 @@ pub struct Claims {
 }
 
 pub struct AuthService {
-    pool: Arc<SqlitePool>,
+    pool: Arc<PgPool>,
     config: Arc<AppConfig>,
 }
 
 impl AuthService {
-    pub fn new(pool: Arc<SqlitePool>, config: Arc<AppConfig>) -> Self {
+    pub fn new(pool: Arc<PgPool>, config: Arc<AppConfig>) -> Self {
         Self { pool, config }
     }
 

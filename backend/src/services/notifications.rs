@@ -2,18 +2,18 @@
 
 use shared::dto::NotificationResponse;
 use shared::error::AppError;
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::db::NotificationRepository;
 
 pub struct NotificationService {
-    pool: Arc<SqlitePool>,
+    pool: Arc<PgPool>,
 }
 
 impl NotificationService {
-    pub fn new(pool: Arc<SqlitePool>) -> Self {
+    pub fn new(pool: Arc<PgPool>) -> Self {
         Self { pool }
     }
 

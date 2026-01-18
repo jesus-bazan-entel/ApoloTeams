@@ -3,18 +3,18 @@
 use shared::dto::{CallParticipantResponse, CallResponse, UserResponse};
 use shared::error::AppError;
 use shared::models::{CallStatus, CallType};
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::db::{CallRepository, ChannelRepository, UserRepository};
 
 pub struct CallService {
-    pool: Arc<SqlitePool>,
+    pool: Arc<PgPool>,
 }
 
 impl CallService {
-    pub fn new(pool: Arc<SqlitePool>) -> Self {
+    pub fn new(pool: Arc<PgPool>) -> Self {
         Self { pool }
     }
 

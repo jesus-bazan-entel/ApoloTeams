@@ -7,7 +7,7 @@ use shared::dto::{
 };
 use shared::error::AppError;
 use shared::models::MessageType;
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -15,11 +15,11 @@ use uuid::Uuid;
 use crate::db::{ChannelRepository, FileRepository, MessageRepository, UserRepository};
 
 pub struct MessageService {
-    pool: Arc<SqlitePool>,
+    pool: Arc<PgPool>,
 }
 
 impl MessageService {
-    pub fn new(pool: Arc<SqlitePool>) -> Self {
+    pub fn new(pool: Arc<PgPool>) -> Self {
         Self { pool }
     }
 
