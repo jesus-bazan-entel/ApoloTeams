@@ -41,13 +41,14 @@ const CheckIcon = () => (
 );
 
 type SettingsTab = 'profile' | 'security' | 'notifications' | 'privacy';
+type UserStatus = 'online' | 'away' | 'busy' | 'offline';
 
 function SettingsPage() {
   const navigate = useNavigate();
   const { currentUser, logout } = useStore();
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const [displayName, setDisplayName] = useState(currentUser?.display_name || '');
-  const [status, setStatus] = useState(currentUser?.status || 'offline');
+  const [status, setStatus] = useState<UserStatus>((currentUser?.status as UserStatus) || 'offline');
   const [statusMessage, setStatusMessage] = useState(currentUser?.status_message || '');
   const [avatarUrl, setAvatarUrl] = useState(currentUser?.avatar_url || '');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -130,7 +131,7 @@ function SettingsPage() {
     { id: 'privacy' as SettingsTab, label: 'Privacy', icon: ShieldIcon },
   ];
 
-  const statusOptions = [
+  const statusOptions: { value: UserStatus; label: string; color: string }[] = [
     { value: 'online', label: 'Available', color: 'bg-status-online' },
     { value: 'away', label: 'Away', color: 'bg-status-away' },
     { value: 'busy', label: 'Busy', color: 'bg-status-busy' },

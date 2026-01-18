@@ -57,7 +57,7 @@ const CallIcon = () => (
 function ChatPage() {
   const { channelId } = useParams<{ channelId: string }>();
   const navigate = useNavigate();
-  const { currentUser, setSelectedChannel, messages, setMessages, addMessage, channels, setChannels, selectedTeam } = useStore();
+  const { currentUser, setSelectedChannel, messages, setMessages, addMessage, channels, setChannels, selectedTeamId } = useStore();
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -65,7 +65,7 @@ function ChatPage() {
 
   useEffect(() => {
     loadChannels();
-  }, [selectedTeam]);
+  }, [selectedTeamId]);
 
   useEffect(() => {
     if (channelId) {
@@ -83,9 +83,9 @@ function ChatPage() {
   };
 
   const loadChannels = async () => {
-    if (!selectedTeam) return;
+    if (!selectedTeamId) return;
     try {
-      const channelsData = await apiClient.listChannels(selectedTeam);
+      const channelsData = await apiClient.listTeamChannels(selectedTeamId);
       setChannels(channelsData);
     } catch (error) {
       console.error('Failed to load channels:', error);
