@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../store';
 import { apiClient } from '../api/client';
-import type { Channel } from '../types';
+import type { Channel, User } from '../types';
 
 // Icons
 const HashIcon = () => (
@@ -47,6 +47,24 @@ const SettingsIcon = () => (
   </svg>
 );
 
+const SearchIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+  </svg>
+);
+
+const CheckIcon = () => (
+  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+  </svg>
+);
+
+const UserPlusIcon = () => (
+  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+    <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
+  </svg>
+);
+
 function TeamPage() {
   const { teamId } = useParams<{ teamId: string }>();
   const navigate = useNavigate();
@@ -57,14 +75,78 @@ function TeamPage() {
   const [newChannelDescription, setNewChannelDescription] = useState('');
   const [creating, setCreating] = useState(false);
 
+  // Invite members state
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [searchedUsers, setSearchedUsers] = useState<User[]>([]);
+  const [searchingUsers, setSearchingUsers] = useState(false);
+  const [addingMember, setAddingMember] = useState<string | null>(null);
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+
   const team = teams.find((t) => t.id === teamId);
 
   useEffect(() => {
     if (teamId) {
       setSelectedTeam(teamId);
       loadChannels();
+      loadTeamMembers();
     }
   }, [teamId, setSelectedTeam]);
+
+  // Search users effect with debounce
+  useEffect(() => {
+    const searchUsers = async () => {
+      if (userSearchQuery.trim().length < 2) {
+        setSearchedUsers([]);
+        return;
+      }
+      setSearchingUsers(true);
+      try {
+        const users = await apiClient.searchUsers(userSearchQuery);
+        // Filter out current user and existing team members
+        const memberIds = teamMembers.map(m => m.user?.id || m.user_id);
+        setSearchedUsers(users.filter(u => u.id !== currentUser?.id && !memberIds.includes(u.id)));
+      } catch (error) {
+        console.error('Failed to search users:', error);
+      } finally {
+        setSearchingUsers(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(searchUsers, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [userSearchQuery, currentUser?.id, teamMembers]);
+
+  const loadTeamMembers = async () => {
+    if (!teamId) return;
+    try {
+      const members = await apiClient.listTeamMembers(teamId);
+      setTeamMembers(members);
+    } catch (error) {
+      console.error('Failed to load team members:', error);
+    }
+  };
+
+  const handleOpenInviteModal = () => {
+    loadTeamMembers();
+    setShowInviteModal(true);
+  };
+
+  const handleAddMember = async (userId: string) => {
+    if (!teamId) return;
+    setAddingMember(userId);
+    try {
+      await apiClient.addTeamMember(teamId, userId);
+      // Refresh team members list
+      await loadTeamMembers();
+      // Remove the added user from search results
+      setSearchedUsers(prev => prev.filter(u => u.id !== userId));
+    } catch (error) {
+      console.error('Failed to add team member:', error);
+    } finally {
+      setAddingMember(null);
+    }
+  };
 
   const loadChannels = async () => {
     if (!teamId) return;
@@ -281,9 +363,12 @@ function TeamPage() {
             <div className="card-teams">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
               <div className="space-y-2">
-                <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors text-left">
+                <button
+                  onClick={handleOpenInviteModal}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                >
                   <div className="w-8 h-8 rounded-lg bg-teams-purple-50 flex items-center justify-center text-teams-purple">
-                    <UsersIcon />
+                    <UserPlusIcon />
                   </div>
                   <span className="font-medium text-gray-700">Invite Members</span>
                 </button>
@@ -294,6 +379,58 @@ function TeamPage() {
                   <span className="font-medium text-gray-700">Team Settings</span>
                 </button>
               </div>
+            </div>
+
+            {/* Team Members */}
+            <div className="card-teams">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Members</h3>
+                <span className="text-sm text-gray-500">{teamMembers.length}</span>
+              </div>
+
+              {teamMembers.length === 0 ? (
+                <div className="text-center py-4 text-gray-500">
+                  <p>No members yet</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {teamMembers.map((member) => {
+                    const isOwner = member.role === 'owner';
+                    const isCurrentUser = member.user_id === currentUser?.id || member.user?.id === currentUser?.id;
+
+                    return (
+                      <div
+                        key={member.user_id || member.user?.id}
+                        className="flex items-center gap-3"
+                      >
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold ${
+                          isOwner ? 'bg-teams-purple' : 'bg-emerald-500'
+                        }`}>
+                          {member.user?.display_name?.[0]?.toUpperCase() ||
+                           member.user?.username?.[0]?.toUpperCase() ||
+                           'U'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 truncate">
+                            {member.user?.display_name || member.user?.username || 'Unknown User'}
+                            {isCurrentUser && (
+                              <span className="text-teams-purple ml-1">(You)</span>
+                            )}
+                          </p>
+                          <div className="flex items-center gap-1 text-sm text-gray-500">
+                            {isOwner && (
+                              <span className="text-teams-purple flex items-center gap-1">
+                                <CrownIcon />
+                              </span>
+                            )}
+                            <span>{member.role || 'member'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -361,6 +498,123 @@ function TeamPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Invite Members Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in">
+          <div className="bg-white rounded-lg shadow-teams-xl w-full max-w-md mx-4 animate-in max-h-[80vh] flex flex-col">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Invite Members</h2>
+              <p className="text-sm text-gray-500 mt-1">Search for users to add to {team?.name}</p>
+            </div>
+
+            <div className="p-6 flex-1 overflow-y-auto">
+              {/* Search Input */}
+              <div className="relative mb-4">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                  <SearchIcon />
+                </span>
+                <input
+                  type="text"
+                  value={userSearchQuery}
+                  onChange={(e) => setUserSearchQuery(e.target.value)}
+                  className="input-teams pl-10"
+                  placeholder="Search users by name or email..."
+                  autoFocus
+                />
+              </div>
+
+              {/* Search Results */}
+              {searchingUsers ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-8 h-8 border-4 border-teams-purple-200 border-t-teams-purple rounded-full animate-spin"></div>
+                </div>
+              ) : searchedUsers.length > 0 ? (
+                <div className="space-y-2 mb-6">
+                  <h4 className="text-sm font-medium text-gray-500 mb-2">Search Results</h4>
+                  {searchedUsers.map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-teams-purple flex items-center justify-center text-white font-semibold">
+                          {user.display_name?.[0]?.toUpperCase() || user.username[0].toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{user.display_name || user.username}</p>
+                          <p className="text-sm text-gray-500">{user.email}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleAddMember(user.id)}
+                        disabled={addingMember === user.id}
+                        className="btn-teams-primary text-sm px-3 py-1.5 disabled:opacity-50"
+                      >
+                        {addingMember === user.id ? (
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          'Add'
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : userSearchQuery.trim().length >= 2 ? (
+                <div className="text-center py-6 text-gray-500">
+                  No users found matching "{userSearchQuery}"
+                </div>
+              ) : null}
+
+              {/* Current Team Members */}
+              {teamMembers.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500 mb-2">
+                    Current Members ({teamMembers.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {teamMembers.map((member) => (
+                      <div
+                        key={member.user_id || member.user?.id}
+                        className="flex items-center gap-3 p-3 rounded-lg bg-gray-50"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-semibold">
+                          {member.user?.display_name?.[0]?.toUpperCase() ||
+                           member.user?.username?.[0]?.toUpperCase() ||
+                           'U'}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">
+                            {member.user?.display_name || member.user?.username || 'Unknown User'}
+                            {member.user_id === currentUser?.id && (
+                              <span className="text-teams-purple ml-2">(You)</span>
+                            )}
+                          </p>
+                          <p className="text-sm text-gray-500">{member.role || 'member'}</p>
+                        </div>
+                        <CheckIcon />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setShowInviteModal(false);
+                  setUserSearchQuery('');
+                  setSearchedUsers([]);
+                }}
+                className="w-full btn-teams-ghost"
+              >
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}

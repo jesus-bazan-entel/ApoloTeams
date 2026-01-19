@@ -143,8 +143,9 @@ function SettingsPage() {
       {/* Header */}
       <header className="h-16 bg-white border-b border-gray-200 flex items-center px-6 shadow-sm">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/')}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors mr-4"
+          title="Back to Dashboard"
         >
           <ArrowLeftIcon />
         </button>

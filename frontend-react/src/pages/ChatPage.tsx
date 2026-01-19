@@ -2,7 +2,6 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../store';
 import { apiClient } from '../api/client';
-import { wsClient } from '../websocket/client';
 import type { Message, Channel } from '../types';
 
 // Icons
@@ -54,10 +53,52 @@ const CallIcon = () => (
   </svg>
 );
 
+const HomeIcon = () => (
+  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+  </svg>
+);
+
+const LockIcon = () => (
+  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+  </svg>
+);
+
+const UserIcon = () => (
+  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+  </svg>
+);
+
+const TeamsIcon = () => (
+  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19.5 3h-15C3.12 3 2 4.12 2 5.5v13C2 19.88 3.12 21 4.5 21h15c1.38 0 2.5-1.12 2.5-2.5v-13C22 4.12 20.88 3 19.5 3z"/>
+  </svg>
+);
+
+const ChatNavIcon = () => (
+  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+  </svg>
+);
+
+const SettingsIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+  </svg>
+);
+
+const LogoutIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+  </svg>
+);
+
 function ChatPage() {
   const { channelId } = useParams<{ channelId: string }>();
   const navigate = useNavigate();
-  const { currentUser, setSelectedChannel, messages, setMessages, addMessage, channels, setChannels, selectedTeamId } = useStore();
+  const { currentUser, setSelectedChannel, messages, setMessages, addMessage, channels, setChannels } = useStore();
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -65,7 +106,7 @@ function ChatPage() {
 
   useEffect(() => {
     loadChannels();
-  }, [selectedTeamId]);
+  }, []);
 
   useEffect(() => {
     if (channelId) {
@@ -83,9 +124,9 @@ function ChatPage() {
   };
 
   const loadChannels = async () => {
-    if (!selectedTeamId) return;
     try {
-      const channelsData = await apiClient.listTeamChannels(selectedTeamId);
+      // Load all channels for the user (includes DMs and team channels)
+      const channelsData = await apiClient.listChannels();
       setChannels(channelsData);
     } catch (error) {
       console.error('Failed to load channels:', error);
@@ -114,11 +155,6 @@ function ChatPage() {
       addMessage(channelId, message);
       setNewMessage('');
       inputRef.current?.focus();
-
-      wsClient.send({
-        type: 'SendMessage',
-        payload: { channel_id: channelId, content: newMessage },
-      });
     } catch (error) {
       console.error('Failed to send message:', error);
     }
@@ -171,30 +207,73 @@ function ChatPage() {
 
   return (
     <div className="flex h-screen bg-surface">
+      {/* Navigation Sidebar */}
+      <aside className="w-16 bg-gradient-to-b from-gray-900 to-gray-800 flex flex-col items-center py-4 gap-4 flex-shrink-0">
+        {/* Logo */}
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teams-purple to-teams-blue flex items-center justify-center text-white shadow-lg">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19.5 3h-15C3.12 3 2 4.12 2 5.5v13C2 19.88 3.12 21 4.5 21h15c1.38 0 2.5-1.12 2.5-2.5v-13C22 4.12 20.88 3 19.5 3z"/>
+          </svg>
+        </div>
+
+        <div className="w-8 h-px bg-gray-700 my-2" />
+
+        <div className="flex-1 flex flex-col gap-2">
+          <button
+            onClick={() => navigate('/')}
+            className="sidebar-item group"
+            title="Home"
+          >
+            <HomeIcon />
+          </button>
+          <div className="sidebar-item-active" title="Chat">
+            <ChatNavIcon />
+          </div>
+        </div>
+
+        <div className="w-8 h-px bg-gray-700 my-2" />
+
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => navigate('/settings')}
+            className="sidebar-item"
+            title="Settings"
+          >
+            <SettingsIcon />
+          </button>
+          <button
+            onClick={() => {
+              useStore.getState().logout();
+              navigate('/login');
+            }}
+            className="sidebar-item text-red-400 hover:text-red-300 hover:bg-red-500/10"
+            title="Sign out"
+          >
+            <LogoutIcon />
+          </button>
+        </div>
+      </aside>
+
       {/* Sidebar - Channels */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
+      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
         {/* Sidebar Header */}
         <div className="h-16 px-4 flex items-center justify-between border-b border-gray-200">
-          <h2 className="font-semibold text-gray-900">Channels</h2>
-          <button className="p-1 hover:bg-gray-100 rounded transition-colors">
-            <svg className="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-2">
+            <h2 className="font-semibold text-gray-900">Channels</h2>
+          </div>
         </div>
 
         {/* Search */}
         <div className="p-3">
           <div className="relative">
-            <SearchIcon />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <SearchIcon />
+            </div>
             <input
               type="text"
               placeholder="Search channels"
               className="w-full pl-10 pr-4 py-2 text-sm bg-gray-100 border-0 rounded-md focus:ring-2 focus:ring-teams-purple focus:bg-white transition-all"
             />
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <SearchIcon />
-            </div>
           </div>
         </div>
 
@@ -202,24 +281,71 @@ function ChatPage() {
         <div className="flex-1 overflow-y-auto">
           {channels.length === 0 ? (
             <div className="p-4 text-center text-gray-500 text-sm">
-              No channels yet
+              <p className="mb-4">No channels yet</p>
+              <button
+                onClick={() => navigate('/')}
+                className="text-teams-purple hover:underline"
+              >
+                Create a team first
+              </button>
             </div>
           ) : (
             <div className="py-2">
-              {channels.map((channel: Channel) => (
-                <button
-                  key={channel.id}
-                  onClick={() => navigate(`/chat/${channel.id}`)}
-                  className={`w-full flex items-center gap-3 px-4 py-2 text-left transition-colors ${
-                    channel.id === channelId
-                      ? 'bg-teams-purple-50 text-teams-purple border-l-4 border-teams-purple'
-                      : 'hover:bg-gray-100 text-gray-700'
-                  }`}
-                >
-                  <HashIcon />
-                  <span className="truncate font-medium">{channel.name}</span>
-                </button>
-              ))}
+              {/* Team Channels */}
+              {channels.filter((c: Channel) => c.channel_type !== 'direct_message').length > 0 && (
+                <>
+                  <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">
+                    Team Channels
+                  </div>
+                  {channels.filter((c: Channel) => c.channel_type !== 'direct_message').map((channel: Channel) => (
+                    <button
+                      key={channel.id}
+                      onClick={() => navigate(`/chat/${channel.id}`)}
+                      className={`w-full flex items-center gap-3 px-4 py-2 text-left transition-colors ${
+                        channel.id === channelId
+                          ? 'bg-teams-purple-50 text-teams-purple border-l-4 border-teams-purple'
+                          : 'hover:bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {channel.channel_type === 'private' ? <LockIcon /> : <HashIcon />}
+                      <span className="truncate font-medium">{channel.name}</span>
+                      {channel.unread_count > 0 && (
+                        <span className="ml-auto bg-teams-purple text-white text-xs px-2 py-0.5 rounded-full">
+                          {channel.unread_count}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </>
+              )}
+
+              {/* Direct Messages */}
+              {channels.filter((c: Channel) => c.channel_type === 'direct_message').length > 0 && (
+                <>
+                  <div className="px-4 py-2 mt-4 text-xs font-semibold text-gray-500 uppercase">
+                    Direct Messages
+                  </div>
+                  {channels.filter((c: Channel) => c.channel_type === 'direct_message').map((channel: Channel) => (
+                    <button
+                      key={channel.id}
+                      onClick={() => navigate(`/chat/${channel.id}`)}
+                      className={`w-full flex items-center gap-3 px-4 py-2 text-left transition-colors ${
+                        channel.id === channelId
+                          ? 'bg-teams-purple-50 text-teams-purple border-l-4 border-teams-purple'
+                          : 'hover:bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      <UserIcon />
+                      <span className="truncate font-medium">{channel.name.replace('dm-', '')}</span>
+                      {channel.unread_count > 0 && (
+                        <span className="ml-auto bg-teams-purple text-white text-xs px-2 py-0.5 rounded-full">
+                          {channel.unread_count}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </>
+              )}
             </div>
           )}
         </div>
@@ -290,40 +416,34 @@ function ChatPage() {
                   </div>
 
                   {/* Messages */}
-                  {msgs.map((message, index) => {
-                    const isOwn = message.sender.id === currentUser?.id;
-                    const showAvatar = index === 0 || msgs[index - 1]?.sender.id !== message.sender.id;
+                  {msgs.map((message) => {
+                    const isOwn = message.sender?.id === currentUser?.id;
+                    const senderName = message.sender?.display_name || 'Unknown User';
 
                     return (
                       <div
                         key={message.id}
-                        className={`group flex gap-3 px-2 py-1 hover:bg-gray-50 rounded-lg transition-colors ${
-                          showAvatar ? 'mt-4' : 'mt-1'
-                        }`}
+                        className="group flex gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg transition-colors mt-3"
                       >
                         {/* Avatar */}
                         <div className="w-10 flex-shrink-0">
-                          {showAvatar && (
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium ${
-                              isOwn ? 'bg-teams-purple' : 'bg-teams-blue'
-                            }`}>
-                              {getInitials(message.sender.display_name)}
-                            </div>
-                          )}
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium ${
+                            isOwn ? 'bg-teams-purple' : 'bg-teams-blue'
+                          }`}>
+                            {getInitials(senderName)}
+                          </div>
                         </div>
 
                         {/* Message Content */}
                         <div className="flex-1 min-w-0">
-                          {showAvatar && (
-                            <div className="flex items-baseline gap-2 mb-1">
-                              <span className="font-semibold text-gray-900">
-                                {message.sender.display_name}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {formatTime(message.created_at)}
-                              </span>
-                            </div>
-                          )}
+                          <div className="flex items-baseline gap-2 mb-1">
+                            <span className="font-semibold text-gray-900">
+                              {senderName}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {formatTime(message.created_at)}
+                            </span>
+                          </div>
                           <div className="text-gray-800 break-words">
                             {message.content}
                           </div>

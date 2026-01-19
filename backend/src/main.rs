@@ -121,8 +121,8 @@ async fn main() -> std::io::Result<()> {
                             .route("/me", web::get().to(handlers::users::get_current_user))
                             .route("/me", web::patch().to(handlers::users::update_current_user))
                             .route("/me/password", web::put().to(handlers::users::change_password))
-                            .route("/{user_id}", web::get().to(handlers::users::get_user))
                             .route("/search", web::get().to(handlers::users::search_users))
+                            .route("/{user_id}", web::get().to(handlers::users::get_user))
                     )
                     // Teams
                     .service(

@@ -5,6 +5,7 @@ import { apiClient } from './api/client';
 import { wsClient } from './websocket/client';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import HomePage from './pages/HomePage';
 import ChatPage from './pages/ChatPage';
 import TeamPage from './pages/TeamPage';
 import SettingsPage from './pages/SettingsPage';
@@ -87,13 +88,13 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={isAuthenticated ? <Navigate to="/chat" /> : <Navigate to="/login" />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/chat" element={<ChatPage />} />
-        <Route path="/chat/:channelId" element={<ChatPage />} />
-        <Route path="/teams/:teamId" element={<TeamPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/" element={isAuthenticated ? <HomePage /> : <Navigate to="/login" />} />
+        <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <LoginPage />} />
+        <Route path="/register" element={isAuthenticated ? <Navigate to="/" /> : <RegisterPage />} />
+        <Route path="/chat" element={isAuthenticated ? <ChatPage /> : <Navigate to="/login" />} />
+        <Route path="/chat/:channelId" element={isAuthenticated ? <ChatPage /> : <Navigate to="/login" />} />
+        <Route path="/teams/:teamId" element={isAuthenticated ? <TeamPage /> : <Navigate to="/login" />} />
+        <Route path="/settings" element={isAuthenticated ? <SettingsPage /> : <Navigate to="/login" />} />
       </Routes>
     </BrowserRouter>
   );

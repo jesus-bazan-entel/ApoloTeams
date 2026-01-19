@@ -155,6 +155,18 @@ class ApiClient {
     return response.data;
   }
 
+  async addTeamMember(teamId: string, userId: string, role?: string): Promise<any> {
+    const response = await axios.post(`${API_BASE_URL}/teams/${teamId}/members`, {
+      user_id: userId,
+      role: role || 'member',
+    });
+    return response.data;
+  }
+
+  async removeTeamMember(teamId: string, userId: string): Promise<void> {
+    await axios.delete(`${API_BASE_URL}/teams/${teamId}/members/${userId}`);
+  }
+
   // Channels
   async listChannels(): Promise<Channel[]> {
     const response = await axios.get<Channel[]>(`${API_BASE_URL}/channels`);
@@ -168,6 +180,11 @@ class ApiClient {
 
   async createChannel(data: CreateChannelRequest): Promise<Channel> {
     const response = await axios.post<Channel>(`${API_BASE_URL}/channels`, data);
+    return response.data;
+  }
+
+  async createDmChannel(userId: string): Promise<Channel> {
+    const response = await axios.post<Channel>(`${API_BASE_URL}/channels/dm`, { user_id: userId });
     return response.data;
   }
 

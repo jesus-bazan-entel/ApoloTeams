@@ -60,6 +60,12 @@ const MenuIcon = () => (
   </svg>
 );
 
+const HomeIcon = () => (
+  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+  </svg>
+);
+
 function HomePage() {
   const navigate = useNavigate();
   const { currentUser, teams, setTeams, setSelectedTeam } = useStore();
