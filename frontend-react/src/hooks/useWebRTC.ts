@@ -424,9 +424,9 @@ export function useWebRTC() {
         payload: { call_id: call.id },
       });
 
-      // Send offers to existing participants, passing stream directly
-      // to avoid timing issue with the Zustand store update
-      for (const participant of call.participants) {
+      // Send offers to existing participants (use joinedCall from API which has
+      // the up-to-date participant list, NOT the stale `call` from CallStarted event)
+      for (const participant of joinedCall.participants) {
         if (participant.user.id !== useStore.getState().currentUser?.id) {
           await sendOffer(participant.user.id, call.id, stream);
         }

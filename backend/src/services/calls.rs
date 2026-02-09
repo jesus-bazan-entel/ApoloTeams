@@ -44,9 +44,19 @@ impl CallService {
             ));
         }
 
-        let call = CallRepository::create(&self.pool, channel_id, initiator_id, call_type)
+        let call = CallRepository::create(&self.pool, channel_id, initiator_id, call_type.clone())
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+        // Auto-add initiator as participant so they appear in the call's participant list
+        CallRepository::add_participant(
+            &self.pool,
+            &call.id,
+            initiator_id,
+            call_type == CallType::Video,
+        )
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
         self.get_call_response(&call.id).await
     }
@@ -106,9 +116,19 @@ impl CallService {
         }
 
         // Create the call
-        let call = CallRepository::create(&self.pool, &channel.id, initiator_id, call_type)
+        let call = CallRepository::create(&self.pool, &channel.id, initiator_id, call_type.clone())
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+        // Auto-add initiator as participant so they appear in the call's participant list
+        CallRepository::add_participant(
+            &self.pool,
+            &call.id,
+            initiator_id,
+            call_type == CallType::Video,
+        )
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
         self.get_call_response(&call.id).await
     }

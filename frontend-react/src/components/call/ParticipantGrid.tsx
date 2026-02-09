@@ -33,16 +33,16 @@ function ParticipantTile({ stream, user, isLocal, isMuted, isVideoEnabled = true
 
   return (
     <div className="relative bg-slate-900 rounded-lg overflow-hidden aspect-video flex items-center justify-center">
-      {/* Video or Avatar */}
-      {hasVideo ? (
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted={isLocal}
-          className="w-full h-full object-cover"
-        />
-      ) : (
+      {/* Video element always rendered so audio tracks play even without video */}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted={isLocal}
+        className={hasVideo ? 'w-full h-full object-cover' : 'absolute w-px h-px opacity-0 pointer-events-none'}
+      />
+      {/* Avatar fallback when no video */}
+      {!hasVideo && (
         <div className="w-20 h-20 rounded-full bg-indigo-600 flex items-center justify-center text-white text-2xl font-semibold">
           {getInitials(displayName)}
         </div>

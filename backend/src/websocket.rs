@@ -415,26 +415,32 @@ pub async fn ws_handler(
                         // WebRTC Offer - Forward to all participants except sender
                         Ok(WebSocketMessage::WebRTCOffer { call_id, from_user_id: _, sdp }) => {
                             if let Some(uid) = user_id {
+                                let participants = ws_server.get_call_participants(&call_id);
+                                info!("WebRTC offer from {} in call {} → forwarding to {} participant(s): {:?}",
+                                    uid, call_id, participants.len().saturating_sub(1),
+                                    participants.iter().filter(|id| **id != uid).collect::<Vec<_>>());
                                 let msg = WebSocketMessage::WebRTCOffer {
                                     call_id,
                                     from_user_id: uid,
                                     sdp,
                                 };
                                 ws_server.send_to_call_participants(&call_id, &msg, Some(&uid));
-                                debug!("Forwarded WebRTC offer from {} in call {}", uid, call_id);
                             }
                         }
 
                         // WebRTC Answer - Forward to all participants except sender
                         Ok(WebSocketMessage::WebRTCAnswer { call_id, from_user_id: _, sdp }) => {
                             if let Some(uid) = user_id {
+                                let participants = ws_server.get_call_participants(&call_id);
+                                info!("WebRTC answer from {} in call {} → forwarding to {} participant(s): {:?}",
+                                    uid, call_id, participants.len().saturating_sub(1),
+                                    participants.iter().filter(|id| **id != uid).collect::<Vec<_>>());
                                 let msg = WebSocketMessage::WebRTCAnswer {
                                     call_id,
                                     from_user_id: uid,
                                     sdp,
                                 };
                                 ws_server.send_to_call_participants(&call_id, &msg, Some(&uid));
-                                debug!("Forwarded WebRTC answer from {} in call {}", uid, call_id);
                             }
                         }
 
@@ -447,7 +453,7 @@ pub async fn ws_handler(
                                     candidate,
                                 };
                                 ws_server.send_to_call_participants(&call_id, &msg, Some(&uid));
-                                debug!("Forwarded ICE candidate from {} in call {}", uid, call_id);
+                                info!("Forwarded ICE candidate from {} in call {}", uid, call_id);
                             }
                         }
 

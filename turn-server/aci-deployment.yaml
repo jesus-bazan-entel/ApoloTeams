@@ -62,6 +62,5 @@ properties:
           - --no-multicast-peers
           - --no-tls
           - --no-dtls
-        environmentVariables:
-          - name: EXTERNAL_IP
-            value: '52.254.62.101'
+          - -X
+          - '52.254.62.101'
