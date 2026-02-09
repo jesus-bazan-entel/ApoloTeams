@@ -39,28 +39,19 @@ properties:
           - port: 49155
             protocol: UDP
         command:
-          - turnserver
-          - -a
-          - -v
-          - -n
-          - -L
-          - '0.0.0.0'
-          - --listening-port
-          - '3478'
-          - --min-port
-          - '49152'
-          - --max-port
-          - '49155'
-          - -r
-          - apolo.teams
-          - --user
-          - apolo:ApoloTurnSecure2026
-          - --log-file
-          - stdout
-          - --no-cli
-          - --fingerprint
-          - --no-multicast-peers
-          - --no-tls
-          - --no-dtls
-          - -X
-          - '52.254.62.101'
+          - /bin/sh
+          - -c
+          - >-
+            i=0; EXTERNAL_IP="";
+            while [ $i -lt 15 ]; do
+            EXTERNAL_IP=$(nslookup apolo-turn.eastus2.azurecontainer.io 2>/dev/null | grep -v '#' | grep 'Address' | sed 's/.*: *//');
+            if [ -n "$EXTERNAL_IP" ]; then break; fi;
+            i=$((i+1)); echo "Waiting for DNS (attempt $i)..."; sleep 2;
+            done;
+            echo "Detected external IP: $EXTERNAL_IP";
+            if [ -n "$EXTERNAL_IP" ]; then
+            exec turnserver -a -v -n -L 0.0.0.0 --listening-port 3478 --min-port 49152 --max-port 49155 -r apolo.teams --user apolo:ApoloTurnSecure2026 --log-file stdout --no-cli --fingerprint --no-multicast-peers --no-tls --no-dtls -X "$EXTERNAL_IP";
+            else
+            echo "WARNING: Could not detect external IP";
+            exec turnserver -a -v -n -L 0.0.0.0 --listening-port 3478 --min-port 49152 --max-port 49155 -r apolo.teams --user apolo:ApoloTurnSecure2026 --log-file stdout --no-cli --fingerprint --no-multicast-peers --no-tls --no-dtls;
+            fi
