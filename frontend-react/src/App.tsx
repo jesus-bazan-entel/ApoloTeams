@@ -25,9 +25,14 @@ function App() {
     const refreshToken = localStorage.getItem('rust_teams_refresh_token');
     if (token && refreshToken) {
       // Validate token by fetching current user
+      // Note: if the token is expired, the axios interceptor will refresh it
+      // and save the new token to localStorage before this .then() runs
       apiClient.getCurrentUser()
         .then((user) => {
-          setAuth(user, token, refreshToken);
+          // Re-read tokens from localStorage since the interceptor may have refreshed them
+          const freshToken = localStorage.getItem('rust_teams_token') || token;
+          const freshRefreshToken = localStorage.getItem('rust_teams_refresh_token') || refreshToken;
+          setAuth(user, freshToken, freshRefreshToken);
         })
         .catch(() => {
           logout();
