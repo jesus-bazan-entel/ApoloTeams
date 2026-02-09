@@ -1,0 +1,67 @@
+apiVersion: '2021-10-01'
+location: eastus2
+name: apolo-turn
+type: Microsoft.ContainerInstance/containerGroups
+properties:
+  osType: Linux
+  restartPolicy: Always
+  ipAddress:
+    type: Public
+    dnsNameLabel: apolo-turn
+    ports:
+      - port: 3478
+        protocol: UDP
+      - port: 49152
+        protocol: UDP
+      - port: 49153
+        protocol: UDP
+      - port: 49154
+        protocol: UDP
+      - port: 49155
+        protocol: UDP
+  containers:
+    - name: coturn
+      properties:
+        image: coturn/coturn:latest
+        resources:
+          requests:
+            cpu: 0.5
+            memoryInGb: 0.5
+        ports:
+          - port: 3478
+            protocol: UDP
+          - port: 49152
+            protocol: UDP
+          - port: 49153
+            protocol: UDP
+          - port: 49154
+            protocol: UDP
+          - port: 49155
+            protocol: UDP
+        command:
+          - turnserver
+          - -a
+          - -v
+          - -n
+          - -L
+          - '0.0.0.0'
+          - --listening-port
+          - '3478'
+          - --min-port
+          - '49152'
+          - --max-port
+          - '49155'
+          - -r
+          - apolo.teams
+          - --user
+          - apolo:ApoloTurnSecure2026
+          - --log-file
+          - stdout
+          - --no-cli
+          - --fingerprint
+          - --no-multicast-peers
+          - --no-tls
+          - --no-dtls
+        environmentVariables:
+          - name: EXTERNAL_IP
+            value: '52.254.62.101'

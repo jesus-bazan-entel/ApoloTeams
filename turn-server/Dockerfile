@@ -1,8 +1,9 @@
-FROM ghcr.io/mycrl/turn-server:latest
+FROM coturn/coturn:latest
 
-COPY config.toml /etc/turn-server/config.toml
+COPY turnserver.conf /etc/turnserver.conf
 
 EXPOSE 3478/udp
 EXPOSE 3478/tcp
+EXPOSE 49152-49155/udp
 
-CMD ["--config", "/etc/turn-server/config.toml"]
+CMD ["-c", "/etc/turnserver.conf"]
