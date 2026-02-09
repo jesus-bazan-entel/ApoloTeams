@@ -12,12 +12,89 @@ const DEFAULT_ICE_CONFIG: RTCConfiguration = {
 };
 
 // ── Shared module-level state (singleton) ──────────────────────────────────
-// These are shared across ALL useWebRTC() hook instances so that peer
-// connections created in one component are visible to handlers in another.
 const peerConnections = new Map<string, RTCPeerConnection>();
 const pendingCandidates = new Map<string, RTCIceCandidateInit[]>();
 let iceConfig: RTCConfiguration = DEFAULT_ICE_CONFIG;
 let signalHandlersRegistered = false;
+
+// ── Call tone generation (Web Audio API) ──────────────────────────────────
+let ringbackCtx: AudioContext | null = null;
+let ringbackOsc: OscillatorNode | null = null;
+let ringbackGain: GainNode | null = null;
+let ringbackTimer: ReturnType<typeof setTimeout> | null = null;
+
+let ringtoneCtx: AudioContext | null = null;
+let ringtoneOsc: OscillatorNode | null = null;
+let ringtoneGain: GainNode | null = null;
+let ringtoneTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** Ringback tone: caller hears 440Hz, 2s on / 4s off */
+export function startRingbackTone() {
+  stopRingbackTone();
+  try {
+    ringbackCtx = new AudioContext();
+    ringbackGain = ringbackCtx.createGain();
+    ringbackGain.gain.value = 0.15;
+    ringbackGain.connect(ringbackCtx.destination);
+    ringbackOsc = ringbackCtx.createOscillator();
+    ringbackOsc.type = 'sine';
+    ringbackOsc.frequency.value = 440;
+    ringbackOsc.connect(ringbackGain);
+    ringbackOsc.start();
+
+    let on = true;
+    const tick = () => {
+      if (!ringbackGain) return;
+      on = !on;
+      ringbackGain.gain.value = on ? 0.15 : 0;
+      ringbackTimer = setTimeout(tick, on ? 2000 : 4000);
+    };
+    ringbackTimer = setTimeout(tick, 2000);
+  } catch (e) {
+    console.warn('Failed to start ringback tone:', e);
+  }
+}
+
+export function stopRingbackTone() {
+  if (ringbackTimer) { clearTimeout(ringbackTimer); ringbackTimer = null; }
+  if (ringbackOsc) { try { ringbackOsc.stop(); } catch (_) { /* already stopped */ } ringbackOsc = null; }
+  if (ringbackGain) { ringbackGain.disconnect(); ringbackGain = null; }
+  if (ringbackCtx) { ringbackCtx.close().catch(() => {}); ringbackCtx = null; }
+}
+
+/** Ringtone: callee hears 523Hz (C5), 1s on / 2s off */
+export function startRingtone() {
+  stopRingtone();
+  try {
+    ringtoneCtx = new AudioContext();
+    ringtoneGain = ringtoneCtx.createGain();
+    ringtoneGain.gain.value = 0.2;
+    ringtoneGain.connect(ringtoneCtx.destination);
+    ringtoneOsc = ringtoneCtx.createOscillator();
+    ringtoneOsc.type = 'sine';
+    ringtoneOsc.frequency.value = 523.25;
+    ringtoneOsc.connect(ringtoneGain);
+    ringtoneOsc.start();
+
+    let on = true;
+    const tick = () => {
+      if (!ringtoneGain) return;
+      on = !on;
+      ringtoneGain.gain.value = on ? 0.2 : 0;
+      ringtoneTimer = setTimeout(tick, on ? 1000 : 2000);
+    };
+    ringtoneTimer = setTimeout(tick, 1000);
+  } catch (e) {
+    console.warn('Failed to start ringtone:', e);
+  }
+}
+
+export function stopRingtone() {
+  if (ringtoneTimer) { clearTimeout(ringtoneTimer); ringtoneTimer = null; }
+  if (ringtoneOsc) { try { ringtoneOsc.stop(); } catch (_) { /* already stopped */ } ringtoneOsc = null; }
+  if (ringtoneGain) { ringtoneGain.disconnect(); ringtoneGain = null; }
+  if (ringtoneCtx) { ringtoneCtx.close().catch(() => {}); ringtoneCtx = null; }
+}
 
 // ── Module-level helper functions ──────────────────────────────────────────
 
@@ -33,7 +110,7 @@ function fetchIceServers(): Promise<void> {
     });
 }
 
-function createPeerConnection(remoteUserId: string, callId: string): RTCPeerConnection {
+function createPeerConnection(remoteUserId: string, callId: string, stream?: MediaStream | null): RTCPeerConnection {
   const existing = peerConnections.get(remoteUserId);
   if (existing) return existing;
 
@@ -54,7 +131,12 @@ function createPeerConnection(remoteUserId: string, callId: string): RTCPeerConn
   };
 
   pc.onconnectionstatechange = () => {
-    console.log(`Connection state with ${remoteUserId}:`, pc.connectionState);
+    console.log(`[WebRTC] Connection state with ${remoteUserId}:`, pc.connectionState);
+    if (pc.connectionState === 'connected') {
+      // Media is flowing — stop tones
+      stopRingbackTone();
+      stopRingtone();
+    }
     if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
       useStore.getState().removeRemoteStream(remoteUserId);
       peerConnections.delete(remoteUserId);
@@ -62,26 +144,29 @@ function createPeerConnection(remoteUserId: string, callId: string): RTCPeerConn
   };
 
   pc.ontrack = (event) => {
-    console.log('Received remote track from', remoteUserId);
+    console.log('[WebRTC] Received remote track from', remoteUserId);
     if (event.streams[0]) {
       useStore.getState().addRemoteStream(remoteUserId, event.streams[0]);
     }
   };
 
-  // Add local tracks
-  const stream = useStore.getState().localStream;
-  if (stream) {
-    stream.getTracks().forEach((track) => {
-      pc.addTrack(track, stream);
+  // Add local tracks — prefer the explicitly passed stream over the store
+  const localStream = stream ?? useStore.getState().localStream;
+  if (localStream) {
+    localStream.getTracks().forEach((track) => {
+      pc.addTrack(track, localStream);
     });
+    console.log(`[WebRTC] Added ${localStream.getTracks().length} local tracks to PC for ${remoteUserId}`);
+  } else {
+    console.warn(`[WebRTC] No local stream available when creating PC for ${remoteUserId}`);
   }
 
   peerConnections.set(remoteUserId, pc);
   return pc;
 }
 
-async function sendOffer(remoteUserId: string, callId: string) {
-  const pc = createPeerConnection(remoteUserId, callId);
+async function sendOffer(remoteUserId: string, callId: string, stream?: MediaStream | null) {
+  const pc = createPeerConnection(remoteUserId, callId, stream);
   const currentUser = useStore.getState().currentUser;
 
   try {
@@ -96,13 +181,14 @@ async function sendOffer(remoteUserId: string, callId: string) {
         sdp: JSON.stringify(offer),
       },
     });
+    console.log(`[WebRTC] Sent offer to ${remoteUserId} for call ${callId}`);
   } catch (error) {
     console.error('Failed to create offer:', error);
   }
 }
 
 async function handleOffer(callId: string, fromUserId: string, sdp: string) {
-  const pc = createPeerConnection(fromUserId, callId);
+  const pc = createPeerConnection(fromUserId, callId, useStore.getState().localStream);
   const currentUser = useStore.getState().currentUser;
 
   try {
@@ -170,6 +256,8 @@ async function handleIceCandidate(fromUserId: string, candidateStr: string) {
 }
 
 function cleanupConnections() {
+  stopRingbackTone();
+  stopRingtone();
   const stream = useStore.getState().localStream;
   if (stream) {
     stream.getTracks().forEach((track) => track.stop());
@@ -187,12 +275,15 @@ function registerSignalHandlers() {
 
   wsClient.on('ParticipantJoined', (data) => {
     const store = useStore.getState();
-    // Update participant count in store
     store.addCallParticipant(data.call_id, data.participant);
-    // Pre-create peer connection (joiner sends offers)
+
+    // If WE are already in this call, send an offer to the new participant.
+    // This is the key: the existing participant initiates WebRTC negotiation.
     const call = store.activeCall;
     if (call?.id === data.call_id && data.participant.user.id !== store.currentUser?.id) {
-      createPeerConnection(data.participant.user.id, data.call_id);
+      console.log(`[WebRTC] New participant ${data.participant.user.id} joined, sending offer`);
+      stopRingbackTone(); // stop ringback once someone answers
+      sendOffer(data.participant.user.id, data.call_id, store.localStream);
     }
   });
 
@@ -274,6 +365,9 @@ export function useWebRTC() {
         payload: { call_id: call.id },
       });
 
+      // Caller hears ringback while waiting for callee
+      startRingbackTone();
+
       return call;
     } catch (error) {
       console.error('Failed to start call:', error);
@@ -294,6 +388,9 @@ export function useWebRTC() {
         payload: { call_id: call.id },
       });
 
+      // Caller hears ringback while waiting for callee
+      startRingbackTone();
+
       return call;
     } catch (error) {
       console.error('Failed to start direct call:', error);
@@ -303,8 +400,11 @@ export function useWebRTC() {
 
   const joinCall = useCallback(async (call: Call) => {
     try {
+      // Stop ringtone — callee is answering
+      stopRingtone();
+
       await fetchIceServers();
-      await initializeLocalMedia(call.call_type === 'video');
+      const stream = await initializeLocalMedia(call.call_type === 'video');
 
       const joinedCall = await apiClient.joinCall(call.id);
       setActiveCall(joinedCall);
@@ -315,10 +415,11 @@ export function useWebRTC() {
         payload: { call_id: call.id },
       });
 
-      // Send offers to existing participants
+      // Send offers to existing participants, passing stream directly
+      // to avoid timing issue with the Zustand store update
       for (const participant of call.participants) {
         if (participant.user.id !== useStore.getState().currentUser?.id) {
-          await sendOffer(participant.user.id, call.id);
+          await sendOffer(participant.user.id, call.id, stream);
         }
       }
 
@@ -346,6 +447,7 @@ export function useWebRTC() {
   }, []);
 
   const rejectCall = useCallback(() => {
+    stopRingtone();
     setIncomingCall(null);
   }, [setIncomingCall]);
 

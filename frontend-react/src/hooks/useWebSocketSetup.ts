@@ -10,6 +10,7 @@
 import { useEffect } from 'react';
 import { useStore } from '../store';
 import { wsClient } from '../websocket/client';
+import { startRingtone, stopRingtone } from './useWebRTC';
 
 // Initialize handlers immediately on module load (before any React renders)
 // This ensures handlers are ready before any WebSocket messages arrive
@@ -87,11 +88,14 @@ function initializeHandlers() {
     const store = useStore.getState();
     if (payload.call.initiator.id !== store.currentUser?.id) {
       store.setIncomingCall(payload.call);
+      // Play ringtone for the callee
+      startRingtone();
     }
   });
 
   wsClient.on('CallEnded', (payload) => {
     console.log('[WS] CallEnded:', payload.call_id);
+    stopRingtone();
     const store = useStore.getState();
     if (store.activeCall?.id === payload.call_id) {
       store.resetCallState();
