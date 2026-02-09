@@ -43,11 +43,29 @@ services:
       UPLOAD_PATH: "./uploads"
       MAX_FILE_SIZE: "${MAX_FILE_SIZE:-104857600}"
       RUST_LOG: "${RUST_LOG:-info,rust_teams_backend=debug}"
+      TURN_SERVER_URL: "${TURN_SERVER_URL:-}"
+      TURN_USERNAME: "${TURN_USERNAME:-}"
+      TURN_CREDENTIAL: "${TURN_CREDENTIAL:-}"
     volumes:
       - uploads:/app/uploads
       - appdata:/app/data
     ports:
       - "${APP_PORT:-8080}:8080"
+
+  # ─────────────────────────────────────────────
+  # TURN Server (optional, for WebRTC NAT traversal)
+  # ─────────────────────────────────────────────
+  turn:
+    build:
+      context: ./turn-server
+      dockerfile: Dockerfile
+    container_name: apolo-turn
+    restart: unless-stopped
+    ports:
+      - "3478:3478/udp"
+      - "3478:3478/tcp"
+    profiles:
+      - turn
 
 volumes:
   pgdata:

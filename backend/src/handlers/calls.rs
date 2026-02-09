@@ -5,6 +5,7 @@ use shared::dto::{StartCallRequest, UpdateCallParticipantRequest, WebSocketMessa
 use std::sync::Arc;
 use uuid::Uuid;
 
+use crate::config::AppConfig;
 use crate::error::ApiResult;
 use crate::middleware::get_user_id_from_request;
 use crate::services::Services;
@@ -168,4 +169,30 @@ pub async fn update_participant(
         .await?;
 
     Ok(HttpResponse::Ok().json(participant))
+}
+
+pub async fn get_ice_servers(
+    req: HttpRequest,
+    services: web::Data<Arc<Services>>,
+    config: web::Data<AppConfig>,
+) -> ApiResult<HttpResponse> {
+    // Require authentication
+    let _user_id = get_user_id_from_request(&req, &services)?;
+
+    let mut ice_servers = vec![
+        serde_json::json!({ "urls": "stun:stun.l.google.com:19302" }),
+        serde_json::json!({ "urls": "stun:stun1.l.google.com:19302" }),
+    ];
+
+    if let Some(turn) = &config.turn {
+        ice_servers.push(serde_json::json!({
+            "urls": &turn.server_url,
+            "username": &turn.username,
+            "credential": &turn.credential,
+        }));
+    }
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({
+        "ice_servers": ice_servers
+    })))
 }

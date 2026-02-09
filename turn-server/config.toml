@@ -1,0 +1,21 @@
+# turn-rs configuration
+# See: https://github.com/mycrl/turn-rs
+
+[turn]
+realm = "apolo.teams"
+
+# Static credentials for TURN authentication
+# IMPORTANT: Change these in production!
+[[turn.auth.static_credentials]]
+username = "apolo"
+password = "apolo-turn-secret-change-me"
+
+# UDP listener on standard TURN port
+[[turn.interfaces]]
+transport = "udp"
+bind = "0.0.0.0:3478"
+
+# TCP listener on standard TURN port
+[[turn.interfaces]]
+transport = "tcp"
+bind = "0.0.0.0:3478"

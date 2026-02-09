@@ -170,6 +170,7 @@ async fn main() -> std::io::Result<()> {
                     .service(
                         web::scope("/calls")
                             .route("", web::post().to(handlers::calls::start_call))
+                            .route("/ice-servers", web::get().to(handlers::calls::get_ice_servers))
                             .route("/{call_id}", web::get().to(handlers::calls::get_call))
                             .route("/{call_id}/join", web::post().to(handlers::calls::join_call))
                             .route("/{call_id}/leave", web::post().to(handlers::calls::leave_call))

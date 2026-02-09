@@ -4,7 +4,7 @@ import { wsClient } from '../websocket/client';
 import { apiClient } from '../api/client';
 import type { Call, CallType } from '../types';
 
-const ICE_SERVERS: RTCConfiguration = {
+const DEFAULT_ICE_CONFIG: RTCConfiguration = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
@@ -33,6 +33,19 @@ export function useWebRTC() {
   // Store peer connections by remote user ID
   const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
   const pendingCandidatesRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
+  const iceConfigRef = useRef<RTCConfiguration>(DEFAULT_ICE_CONFIG);
+
+  // Fetch ICE servers from backend (includes TURN if configured)
+  const fetchIceServers = useCallback(async () => {
+    try {
+      const { ice_servers } = await apiClient.getIceServers();
+      iceConfigRef.current = { iceServers: ice_servers };
+      console.log('ICE servers configured:', ice_servers.length, 'servers');
+    } catch (error) {
+      console.warn('Failed to fetch ICE servers, using defaults:', error);
+      iceConfigRef.current = DEFAULT_ICE_CONFIG;
+    }
+  }, []);
 
   // Initialize local media stream
   const initializeLocalMedia = useCallback(async (isVideo: boolean) => {
@@ -56,7 +69,7 @@ export function useWebRTC() {
       return existingPc;
     }
 
-    const pc = new RTCPeerConnection(ICE_SERVERS);
+    const pc = new RTCPeerConnection(iceConfigRef.current);
 
     // Handle ICE candidates
     pc.onicecandidate = (event) => {
@@ -198,6 +211,9 @@ export function useWebRTC() {
   // Start a new call in a channel
   const startCall = useCallback(async (channelId: string, callType: CallType) => {
     try {
+      // Fetch ICE servers (includes TURN if configured)
+      await fetchIceServers();
+
       // Initialize media
       await initializeLocalMedia(callType === 'video');
 
@@ -216,11 +232,14 @@ export function useWebRTC() {
       console.error('Failed to start call:', error);
       throw error;
     }
-  }, [initializeLocalMedia, setActiveCall]);
+  }, [fetchIceServers, initializeLocalMedia, setActiveCall]);
 
   // Start a direct call to a user (no channel required)
   const startDirectCall = useCallback(async (targetUserId: string, callType: CallType) => {
     try {
+      // Fetch ICE servers (includes TURN if configured)
+      await fetchIceServers();
+
       // Initialize media
       await initializeLocalMedia(callType === 'video');
 
@@ -239,11 +258,14 @@ export function useWebRTC() {
       console.error('Failed to start direct call:', error);
       throw error;
     }
-  }, [initializeLocalMedia, setActiveCall]);
+  }, [fetchIceServers, initializeLocalMedia, setActiveCall]);
 
   // Join an existing call
   const joinCall = useCallback(async (call: Call) => {
     try {
+      // Fetch ICE servers (includes TURN if configured)
+      await fetchIceServers();
+
       // Initialize media
       await initializeLocalMedia(call.call_type === 'video');
 
@@ -270,7 +292,7 @@ export function useWebRTC() {
       console.error('Failed to join call:', error);
       throw error;
     }
-  }, [initializeLocalMedia, setActiveCall, setIncomingCall, currentUser?.id, sendOffer]);
+  }, [fetchIceServers, initializeLocalMedia, setActiveCall, setIncomingCall, currentUser?.id, sendOffer]);
 
   // Leave the current call
   const leaveCall = useCallback(async () => {
@@ -343,12 +365,11 @@ export function useWebRTC() {
   // Set up WebSocket handlers for WebRTC signaling
   // Note: CallStarted/CallEnded are handled in App.tsx globally
   useEffect(() => {
-    // Handle participant joined - need to send offer to new participant
+    // Handle participant joined - pre-create peer connection (joiner sends offers)
     wsClient.on('ParticipantJoined', (data) => {
       const call = useStore.getState().activeCall;
       if (call?.id === data.call_id && data.participant.user.id !== currentUser?.id) {
-        // Send offer to new participant
-        sendOffer(data.participant.user.id, data.call_id);
+        createPeerConnection(data.participant.user.id, data.call_id);
       }
     });
 
@@ -383,7 +404,7 @@ export function useWebRTC() {
       wsClient.off('WebRTCAnswer');
       wsClient.off('WebRTCIceCandidate');
     };
-  }, [currentUser?.id, handleOffer, handleAnswer, handleIceCandidate, sendOffer, removeRemoteStream]);
+  }, [currentUser?.id, handleOffer, handleAnswer, handleIceCandidate, createPeerConnection, removeRemoteStream]);
 
   return {
     // State

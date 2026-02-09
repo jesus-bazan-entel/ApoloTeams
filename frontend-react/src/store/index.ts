@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { User, Team, Channel, Message, Notification, Call, Meeting } from '../types';
+import type { User, Team, Channel, Message, Notification, Call, CallParticipant, Meeting } from '../types';
 
 interface AppState {
   // Auth
@@ -63,6 +63,8 @@ interface AppState {
   // Call actions
   setActiveCall: (call: Call | null) => void;
   setIncomingCall: (call: Call | null) => void;
+  addCallParticipant: (callId: string, participant: CallParticipant) => void;
+  removeCallParticipant: (callId: string, userId: string) => void;
   setLocalAudioEnabled: (enabled: boolean) => void;
   setLocalVideoEnabled: (enabled: boolean) => void;
   setLocalStream: (stream: MediaStream | null) => void;
@@ -256,6 +258,28 @@ export const useStore = create<AppState>((set) => ({
   // Call actions
   setActiveCall: (call) => set({ activeCall: call }),
   setIncomingCall: (call) => set({ incomingCall: call }),
+  addCallParticipant: (callId, participant) =>
+    set((state) => {
+      if (!state.activeCall || state.activeCall.id !== callId) return state;
+      const exists = state.activeCall.participants.some((p) => p.user.id === participant.user.id);
+      if (exists) return state;
+      return {
+        activeCall: {
+          ...state.activeCall,
+          participants: [...state.activeCall.participants, participant],
+        },
+      };
+    }),
+  removeCallParticipant: (callId, userId) =>
+    set((state) => {
+      if (!state.activeCall || state.activeCall.id !== callId) return state;
+      return {
+        activeCall: {
+          ...state.activeCall,
+          participants: state.activeCall.participants.filter((p) => p.user.id !== userId),
+        },
+      };
+    }),
   setLocalAudioEnabled: (enabled) => set({ isLocalAudioEnabled: enabled }),
   setLocalVideoEnabled: (enabled) => set({ isLocalVideoEnabled: enabled }),
   setLocalStream: (stream) => set({ localStream: stream }),

@@ -9,6 +9,14 @@ pub struct AppConfig {
     pub database: DatabaseConfig,
     pub jwt: JwtConfig,
     pub storage: StorageConfig,
+    pub turn: Option<TurnConfig>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct TurnConfig {
+    pub server_url: String,
+    pub username: String,
+    pub credential: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -73,6 +81,11 @@ impl AppConfig {
                     .parse()
                     .unwrap_or(104857600),
             },
+            turn: env::var("TURN_SERVER_URL").ok().map(|server_url| TurnConfig {
+                server_url,
+                username: env::var("TURN_USERNAME").unwrap_or_default(),
+                credential: env::var("TURN_CREDENTIAL").unwrap_or_default(),
+            }),
         };
 
         Ok(config)

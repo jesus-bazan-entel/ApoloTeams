@@ -294,6 +294,11 @@ class ApiClient {
     await axios.patch(`${API_BASE_URL}/calls/${callId}/participant`, data);
   }
 
+  async getIceServers(): Promise<{ ice_servers: RTCIceServer[] }> {
+    const response = await axios.get<{ ice_servers: RTCIceServer[] }>(`${API_BASE_URL}/calls/ice-servers`);
+    return response.data;
+  }
+
   // Search
   async searchMessages(query: string): Promise<{ messages: Message[]; total_count: number }> {
     const response = await axios.get(`${API_BASE_URL}/search/messages?q=${query}`);

@@ -103,10 +103,12 @@ function initializeHandlers() {
 
   wsClient.on('ParticipantJoined', (payload) => {
     console.log('[WS] ParticipantJoined:', payload);
+    useStore.getState().addCallParticipant(payload.call_id, payload.participant);
   });
 
   wsClient.on('ParticipantLeft', (payload) => {
     console.log('[WS] ParticipantLeft:', payload);
+    useStore.getState().removeCallParticipant(payload.call_id, payload.user_id);
   });
 
   // Meeting handlers
