@@ -24,7 +24,7 @@ export class WebSocketClient {
     this.ws = new WebSocket(this.url);
 
     this.ws.onopen = () => {
-      console.log('WebSocket connected, authenticating...');
+      console.log('WebSocket connected, authenticating... Registered handlers:', this.debugHandlers());
       this.reconnectAttempts = 0;
 
       // Send authentication message directly (bypass queue)
@@ -101,11 +101,16 @@ export class WebSocketClient {
   private handleMessage(message: WebSocketMessage): void {
     const handler = this.messageHandlers.get(message.type);
     if (handler) {
-      console.log('[WS] Handling message:', message.type);
+      console.log('[WS] Handling message:', message.type, JSON.stringify(message.payload).substring(0, 200));
       handler(message.payload);
     } else {
       console.warn('[WS] No handler for message type:', message.type, message);
     }
+  }
+
+  /** Debug: list all registered handler types */
+  debugHandlers(): string[] {
+    return [...this.messageHandlers.keys()];
   }
 
   on<T extends WebSocketMessage['type']>(

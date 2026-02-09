@@ -320,7 +320,7 @@ function registerSignalHandlers() {
     handleIceCandidate(data.from_user_id, data.candidate);
   });
 
-  console.log('[WebRTC] Signaling handlers registered');
+  console.log('[WebRTC] Signaling handlers registered:', wsClient.debugHandlers());
 }
 
 // Register immediately on module import

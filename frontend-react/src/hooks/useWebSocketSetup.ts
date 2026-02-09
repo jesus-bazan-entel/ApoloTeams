@@ -139,7 +139,7 @@ function initializeHandlers() {
     console.error('[WS] Error:', payload.code, payload.message);
   });
 
-  console.log('[WS] All handlers registered');
+  console.log('[WS] All handlers registered:', wsClient.debugHandlers());
 }
 
 // Initialize handlers immediately when this module is imported

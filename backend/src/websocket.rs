@@ -79,8 +79,13 @@ impl WebSocketServer {
     pub fn send_to_user(&self, user_id: &Uuid, message: &WebSocketMessage) {
         if let Some(sender) = self.connections.get(user_id) {
             if let Ok(json) = serde_json::to_string(message) {
-                let _ = sender.send(json);
+                match sender.send(json) {
+                    Ok(n) => info!("send_to_user {}: delivered to {} receiver(s)", user_id, n),
+                    Err(_) => warn!("send_to_user {}: broadcast send failed (no receivers)", user_id),
+                }
             }
+        } else {
+            warn!("send_to_user {}: user NOT connected (not in connections map)", user_id);
         }
     }
 

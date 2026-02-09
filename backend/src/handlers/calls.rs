@@ -3,6 +3,7 @@
 use actix_web::{web, HttpRequest, HttpResponse};
 use shared::dto::{StartCallRequest, UpdateCallParticipantRequest, WebSocketMessage};
 use std::sync::Arc;
+use tracing::{info, warn};
 use uuid::Uuid;
 
 use crate::config::AppConfig;
@@ -58,10 +59,12 @@ pub async fn start_call(
     if is_direct_call {
         // For direct calls, send directly to the target user (they may not be subscribed to channel yet)
         if let Some(target_id) = target_user {
+            info!("start_call: sending CallStarted to target user {} (direct call {})", target_id, call.id);
             ws_server.send_to_user(&target_id, &call_started_msg);
         }
     } else {
         // For channel calls, broadcast to all channel subscribers except initiator
+        info!("start_call: broadcasting CallStarted to channel {} (call {})", call.channel_id, call.id);
         ws_server.broadcast_to_channel(&call.channel_id, &call_started_msg, Some(&user_id));
     }
 
@@ -97,7 +100,10 @@ pub async fn join_call(
             call_id,
             participant: participant.clone(),
         };
+        info!("join_call: broadcasting ParticipantJoined for user {} to channel {} (call {})", user_id, call.channel_id, call_id);
         ws_server.broadcast_to_channel(&call.channel_id, &msg, Some(&user_id));
+    } else {
+        warn!("join_call: user {} not found in participants of call {}", user_id, call_id);
     }
 
     Ok(HttpResponse::Ok().json(call))
