@@ -5,7 +5,9 @@
 # Builds Docker image → pushes to Azure Container Registry → deploys to Container Apps
 #
 # Required GitHub Secrets:
-#   AZURE_CREDENTIALS         - Service principal JSON (az ad sp create-for-rbac output)
+#   AZURE_CLIENT_ID           - Service principal client/app ID
+#   AZURE_CLIENT_SECRET       - Service principal client secret
+#   AZURE_TENANT_ID           - Azure AD tenant ID
 #   AZURE_SUBSCRIPTION_ID     - Azure subscription ID
 #   AZURE_RESOURCE_GROUP      - Resource group name (e.g., rg-apolo-teams)
 #   AZURE_REGION              - Region (e.g., eastus2, brazilsouth)
@@ -41,7 +43,10 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       # ── Build & Push to Azure Container Registry ───────────────────────────
       - name: Login to ACR
