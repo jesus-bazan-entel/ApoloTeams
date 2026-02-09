@@ -81,7 +81,7 @@ impl AppConfig {
                     .parse()
                     .unwrap_or(104857600),
             },
-            turn: env::var("TURN_SERVER_URL").ok().map(|server_url| TurnConfig {
+            turn: env::var("TURN_SERVER_URL").ok().filter(|s| !s.is_empty()).map(|server_url| TurnConfig {
                 server_url,
                 username: env::var("TURN_USERNAME").unwrap_or_default(),
                 credential: env::var("TURN_CREDENTIAL").unwrap_or_default(),

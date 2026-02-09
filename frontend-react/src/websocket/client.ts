@@ -10,6 +10,7 @@ export class WebSocketClient {
   private authenticated = false;
   private pendingMessages: WebSocketMessage[] = [];
   private joinedChannels: Set<string> = new Set();
+  private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(private url: string) {}
 
@@ -40,6 +41,7 @@ export class WebSocketClient {
         // Handle authentication completion internally
         if (message.type === 'Authenticated') {
           this.authenticated = true;
+          this.startHeartbeat();
           console.log('[WS] Authenticated. Tracked channels:', [...this.joinedChannels]);
           console.log('[WS] Pending messages:', this.pendingMessages.length);
 
@@ -77,6 +79,7 @@ export class WebSocketClient {
     this.ws.onclose = () => {
       console.log('WebSocket disconnected');
       this.authenticated = false;
+      this.stopHeartbeat();
       this.attemptReconnect();
     };
 
@@ -140,7 +143,25 @@ export class WebSocketClient {
     }
   }
 
+  private startHeartbeat(): void {
+    this.stopHeartbeat();
+    // Send ping every 25 seconds to keep connection alive through Azure proxy
+    this.heartbeatInterval = setInterval(() => {
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        this.ws.send('ping');
+      }
+    }, 25000);
+  }
+
+  private stopHeartbeat(): void {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+  }
+
   disconnect(): void {
+    this.stopHeartbeat();
     if (this.ws) {
       this.ws.close();
       this.ws = null;
