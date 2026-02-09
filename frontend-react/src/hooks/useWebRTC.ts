@@ -130,6 +130,10 @@ function createPeerConnection(remoteUserId: string, callId: string, stream?: Med
     }
   };
 
+  pc.oniceconnectionstatechange = () => {
+    console.log(`[WebRTC] ICE state with ${remoteUserId}:`, pc.iceConnectionState);
+  };
+
   pc.onconnectionstatechange = () => {
     console.log(`[WebRTC] Connection state with ${remoteUserId}:`, pc.connectionState);
     if (pc.connectionState === 'connected') {
@@ -141,6 +145,10 @@ function createPeerConnection(remoteUserId: string, callId: string, stream?: Med
       useStore.getState().removeRemoteStream(remoteUserId);
       peerConnections.delete(remoteUserId);
     }
+  };
+
+  pc.onsignalingstatechange = () => {
+    console.log(`[WebRTC] Signaling state with ${remoteUserId}:`, pc.signalingState);
   };
 
   pc.ontrack = (event) => {
@@ -277,13 +285,14 @@ function registerSignalHandlers() {
     const store = useStore.getState();
     store.addCallParticipant(data.call_id, data.participant);
 
-    // If WE are already in this call, send an offer to the new participant.
-    // This is the key: the existing participant initiates WebRTC negotiation.
     const call = store.activeCall;
     if (call?.id === data.call_id && data.participant.user.id !== store.currentUser?.id) {
-      console.log(`[WebRTC] New participant ${data.participant.user.id} joined, sending offer`);
-      stopRingbackTone(); // stop ringback once someone answers
-      sendOffer(data.participant.user.id, data.call_id, store.localStream);
+      console.log(`[WebRTC] New participant ${data.participant.user.id} joined our call`);
+      stopRingbackTone();
+      // Pre-create the peer connection with local tracks so it's ready
+      // when the joiner's offer arrives. The JOINER sends the offer (in joinCall),
+      // not us — sending from both sides causes a glare condition.
+      createPeerConnection(data.participant.user.id, data.call_id, store.localStream);
     }
   });
 
