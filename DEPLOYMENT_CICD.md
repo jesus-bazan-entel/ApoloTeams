@@ -324,7 +324,173 @@ Internet
 │  Azure Container Registry (apoloteamsacr)                    │
 │  Azure Storage Account (apolodbstorage)                      │
 └──────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────┐
+│  Azure Container Instance (apolo-turn) - IP publica/UDP      │
+│                                                              │
+│  ┌─────────────────────┐                                     │
+│  │  coturn/coturn:latest│  STUN/TURN :3478/UDP               │
+│  │  - NAT traversal     │  Relay: 49152-49155/UDP            │
+│  │  - TURN relay        │  Auth: long-term credentials       │
+│  │  - Auto-detect IP    │  DNS: apolo-turn.eastus2.          │
+│  │    via nslookup      │       azurecontainer.io            │
+│  └─────────────────────┘                                     │
+└──────────────────────────────────────────────────────────────┘
+
+Flujo de media (audio/video):
+  Browser A ←──── TURN relay (UDP) ────→ Browser B
+  (cuando conexion directa P2P no es posible por NAT)
 ```
+
+### Paso 11: Servidor TURN (coturn) para llamadas de audio/video
+
+Las llamadas WebRTC requieren un servidor TURN para funcionar entre redes diferentes (NAT traversal). STUN solo no es suficiente cuando ambos peers estan detras de NAT simetrico. Azure Container Apps no soporta UDP, por lo que se usa Azure Container Instance (ACI).
+
+**Por que coturn:** Es el servidor TURN mas maduro y probado (escrito en C). La imagen `coturn/coturn:latest` de Docker Hub se usa directamente sin necesidad de ACR.
+
+**Por que ACI y no Container Apps:** Container Apps solo soporta HTTP/TCP. TURN requiere UDP en el puerto 3478 y puertos de relay. ACI soporta hasta 5 puertos UDP.
+
+```bash
+# Registrar el provider de Container Instance (solo la primera vez)
+az provider register --namespace Microsoft.ContainerInstance
+
+# Desplegar coturn en ACI con deteccion automatica de IP externa
+# La IP publica de ACI es dinamica, por eso el script usa nslookup
+# para detectarla al inicio y pasarla al flag -X de coturn.
+# Sin -X, coturn anuncia la IP interna del contenedor (192.168.x.x)
+# en las direcciones de relay, que los clientes no pueden alcanzar.
+az container create \
+  --resource-group $RESOURCE_GROUP \
+  --file turn-server/aci-deployment.yaml
+# Resultado:
+# provisioningState: "Succeeded"
+# fqdn: apolo-turn.eastus2.azurecontainer.io
+# state: "Running"
+# Puertos UDP: 3478 (STUN/TURN), 49152-49155 (relay)
+
+# Verificar que coturn detecto la IP externa correctamente
+az container logs --resource-group rg-apolo-teams --name apolo-turn | head -5
+# Resultado esperado:
+# Detected external IP: <IP_PUBLICA>
+# 0: INFO: Coturn Version Coturn-4.8.0 'Gorst'
+
+# Verificar IP publica asignada
+az container show --resource-group rg-apolo-teams --name apolo-turn \
+  --query "ipAddress.ip" -o tsv
+# Resultado: <IP_PUBLICA> (puede cambiar al recrear el contenedor)
+```
+
+**Configuracion del startup de coturn (turn-server/aci-deployment.yaml):**
+
+```
+command: /bin/sh -c
+  1. Ejecuta nslookup apolo-turn.eastus2.azurecontainer.io con reintentos (hasta 15 intentos, 2s entre cada uno)
+  2. Extrae la IP publica del resultado DNS
+  3. Lanza turnserver con -X <IP_DETECTADA> para mapeo correcto de relay
+  4. Si DNS falla, lanza sin -X (funciona para STUN pero TURN relay puede fallar)
+```
+
+**Puertos y limites de ACI:**
+- ACI permite maximo 5 puertos por IP publica
+- Se usan: 3478/UDP (STUN/TURN) + 49152-49155/UDP (4 puertos relay)
+- Rango de relay reducido (normalmente seria 49152-65535) pero suficiente para ~2 llamadas simultaneas
+- Para mas capacidad, escalar a Azure VM con rango completo de puertos
+
+### Paso 12: Configurar variables TURN en la app
+
+```bash
+# Agregar las variables de entorno del servidor TURN al Container App
+# El backend expone GET /api/v1/calls/ice-servers que retorna los servidores
+# ICE (STUN + TURN) al frontend. Sin estas variables, solo retorna STUN.
+az containerapp update \
+  --name apolo-teams \
+  --resource-group rg-apolo-teams \
+  --set-env-vars \
+    TURN_SERVER_URL=turn:apolo-turn.eastus2.azurecontainer.io:3478 \
+    TURN_USERNAME=apolo \
+    TURN_CREDENTIAL=ApoloTurnSecure2026
+# Resultado: nueva revision creada con las variables TURN
+
+# Verificar que el endpoint retorna TURN (debe devolver 3 servidores: 2 STUN + 1 TURN)
+curl -s -H "Authorization: Bearer <TOKEN>" \
+  https://<APP_FQDN>/api/v1/calls/ice-servers
+# Resultado esperado (~210 bytes):
+# {"ice_servers":[
+#   {"urls":"stun:stun.l.google.com:19302"},
+#   {"urls":"stun:stun1.l.google.com:19302"},
+#   {"urls":"turn:apolo-turn.eastus2.azurecontainer.io:3478","username":"apolo","credential":"ApoloTurnSecure2026"}
+# ]}
+```
+
+### Paso 13: Deploy de actualizaciones (build local + push)
+
+```bash
+# 1. Build del frontend
+cd frontend-react && npm run build && cd ..
+
+# 2. Copiar frontend a static/ (el backend sirve el SPA desde ahi)
+cp frontend-react/dist/* static/
+cp -r frontend-react/dist/assets static/
+
+# 3. Login al ACR
+az acr login --name $ACR_NAME
+
+# 4. Build Docker local (multi-stage: frontend + backend + runtime)
+docker build -t ${ACR_NAME}.azurecr.io/apolo-teams:$(git rev-parse HEAD) \
+  -t ${ACR_NAME}.azurecr.io/apolo-teams:latest .
+
+# 5. Push al registro
+docker push ${ACR_NAME}.azurecr.io/apolo-teams:$(git rev-parse HEAD)
+docker push ${ACR_NAME}.azurecr.io/apolo-teams:latest
+
+# 6. Actualizar Container App con la nueva imagen
+az containerapp update \
+  --name apolo-teams \
+  --resource-group rg-apolo-teams \
+  --image "${ACR_NAME}.azurecr.io/apolo-teams:$(git rev-parse HEAD)"
+# Resultado: nueva revision creada, transicion automatica de trafico
+
+# 7. Verificar revision activa
+az containerapp revision list \
+  --name apolo-teams \
+  --resource-group rg-apolo-teams \
+  --query "[?properties.active].{name:name, created:properties.createdTime, state:properties.runningState}" \
+  -o table
+```
+
+### Flujo de llamadas WebRTC (arquitectura de senalizacion)
+
+```
+Caller (PC)                    Backend (WS)                   Callee (Mobile)
+    |                              |                              |
+    |-- POST /calls (startCall) -->|                              |
+    |<-- call (with initiator as   |                              |
+    |    participant)              |                              |
+    |-- WS: JoinCall ------------->|  (subscribe to call)         |
+    |                              |-- WS: CallStarted ---------->|  (ringtone)
+    |                              |                              |
+    |                              |<-- POST /calls/{id}/join ----|  (user answers)
+    |                              |  (add callee as participant) |
+    |<-- WS: ParticipantJoined ----|                              |
+    |  (pre-create PeerConnection) |                              |
+    |                              |                    WS: JoinCall (subscribe)
+    |                              |<-- WS: WebRTCOffer ---------|  (callee sends offer)
+    |<-- WS: WebRTCOffer ---------|                              |
+    |  (setRemoteDescription)      |                              |
+    |-- WS: WebRTCAnswer -------->|-- WS: WebRTCAnswer -------->|
+    |                              |                  (setRemoteDescription)
+    |<-- WS: ICE candidates ------>|<-- WS: ICE candidates ------>|
+    |                              |                              |
+    |============= MEDIA FLOWS (via TURN relay if needed) ========|
+```
+
+**Puntos criticos del flujo:**
+1. `start_call` agrega automaticamente al iniciador como participante en la BD
+2. `CallStarted` se envia via `send_to_user()` a todos los miembros del canal (no solo WS subscribers)
+3. El callee usa `joinedCall.participants` (respuesta fresca del API) para saber a quien enviar offers
+4. Solo el joiner (callee) envia offers para evitar "glare" (ambos lados enviando offers simultaneamente)
+5. El `<video>` siempre se renderiza (oculto si no hay video) para que el audio del stream remoto suene
+6. ICE candidates se bufferean en `pendingCandidates` hasta que `remoteDescription` este seteado
 
 ### Comandos utiles de administracion
 
@@ -345,6 +511,16 @@ az containerapp update --name apolo-teams --resource-group rg-apolo-teams \
 
 # Ver estado de todos los container apps
 az containerapp list --resource-group rg-apolo-teams -o table
+
+# Ver logs del servidor TURN (coturn)
+az container logs --resource-group rg-apolo-teams --name apolo-turn --tail 50
+
+# Reiniciar coturn (re-detecta IP externa al iniciar)
+az container restart --resource-group rg-apolo-teams --name apolo-turn
+
+# Ver IP publica actual del TURN server
+az container show --resource-group rg-apolo-teams --name apolo-turn \
+  --query "ipAddress.ip" -o tsv
 
 # Eliminar TODO (para limpiar recursos y evitar costos)
 az group delete --name rg-apolo-teams --yes --no-wait
