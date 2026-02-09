@@ -188,6 +188,20 @@ async fn main() -> std::io::Result<()> {
                             .route("/{notification_id}/read", web::post().to(handlers::notifications::mark_as_read))
                             .route("/read-all", web::post().to(handlers::notifications::mark_all_as_read))
                     )
+                    // Meetings
+                    .service(
+                        web::scope("/meetings")
+                            .route("", web::get().to(handlers::meetings::get_my_meetings))
+                            .route("", web::post().to(handlers::meetings::create_meeting))
+                            .route("/calendar", web::get().to(handlers::meetings::get_calendar))
+                            .route("/{meeting_id}", web::get().to(handlers::meetings::get_meeting))
+                            .route("/{meeting_id}", web::patch().to(handlers::meetings::update_meeting))
+                            .route("/{meeting_id}", web::delete().to(handlers::meetings::delete_meeting))
+                            .route("/{meeting_id}/cancel", web::post().to(handlers::meetings::cancel_meeting))
+                            .route("/{meeting_id}/invite", web::post().to(handlers::meetings::invite_participants))
+                            .route("/{meeting_id}/respond", web::post().to(handlers::meetings::respond_to_meeting))
+                            .route("/{meeting_id}/participants/{user_id}", web::delete().to(handlers::meetings::remove_participant))
+                    )
             )
             // WebSocket endpoint
             .route("/ws", web::get().to(websocket::ws_handler))

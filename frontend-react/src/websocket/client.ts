@@ -6,6 +6,10 @@ export class WebSocketClient {
   private maxReconnectAttempts = 5;
   private reconnectDelay = 3000;
   private messageHandlers: Map<string, (data: any) => void> = new Map();
+  private currentToken: string | null = null;
+  private authenticated = false;
+  private pendingMessages: WebSocketMessage[] = [];
+  private joinedChannels: Set<string> = new Set();
 
   constructor(private url: string) {}
 
@@ -14,16 +18,56 @@ export class WebSocketClient {
       return;
     }
 
-    this.ws = new WebSocket(`${this.url}?token=${token}`);
+    this.currentToken = token;
+    this.authenticated = false;
+    this.ws = new WebSocket(this.url);
 
     this.ws.onopen = () => {
-      console.log('WebSocket connected');
+      console.log('WebSocket connected, authenticating...');
       this.reconnectAttempts = 0;
+
+      // Send authentication message directly (bypass queue)
+      this.sendDirect({
+        type: 'Authenticate',
+        payload: { token }
+      });
     };
 
     this.ws.onmessage = (event) => {
       try {
         const message: WebSocketMessage = JSON.parse(event.data);
+
+        // Handle authentication completion internally
+        if (message.type === 'Authenticated') {
+          this.authenticated = true;
+          console.log('[WS] Authenticated. Tracked channels:', [...this.joinedChannels]);
+          console.log('[WS] Pending messages:', this.pendingMessages.length);
+
+          // Re-join all previously tracked channels
+          for (const channelId of this.joinedChannels) {
+            console.log('[WS] Re-joining channel:', channelId);
+            this.sendDirect({
+              type: 'JoinChannel',
+              payload: { channel_id: channelId }
+            });
+          }
+
+          // Flush pending messages, skipping all JoinChannel/LeaveChannel since
+          // joinedChannels already represents the desired state and re-join handled it.
+          // This prevents React.StrictMode's double-fire cleanup LeaveChannel from
+          // unsubscribing us right after re-join.
+          const pending = this.pendingMessages;
+          this.pendingMessages = [];
+          for (const msg of pending) {
+            if (msg.type === 'JoinChannel' || msg.type === 'LeaveChannel') {
+              console.log('[WS] Skipping queued channel msg during flush:', msg.type);
+              continue;
+            }
+            console.log('[WS] Flushing pending:', msg.type);
+            this.sendDirect(msg);
+          }
+        }
+
         this.handleMessage(message);
       } catch (error) {
         console.error('Failed to parse WebSocket message:', error);
@@ -32,7 +76,8 @@ export class WebSocketClient {
 
     this.ws.onclose = () => {
       console.log('WebSocket disconnected');
-      this.attemptReconnect(token);
+      this.authenticated = false;
+      this.attemptReconnect();
     };
 
     this.ws.onerror = (error) => {
@@ -40,12 +85,12 @@ export class WebSocketClient {
     };
   }
 
-  private attemptReconnect(token: string): void {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+  private attemptReconnect(): void {
+    if (this.reconnectAttempts < this.maxReconnectAttempts && this.currentToken) {
       this.reconnectAttempts++;
       setTimeout(() => {
         console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-        this.connect(token);
+        this.connect(this.currentToken!);
       }, this.reconnectDelay);
     }
   }
@@ -53,7 +98,10 @@ export class WebSocketClient {
   private handleMessage(message: WebSocketMessage): void {
     const handler = this.messageHandlers.get(message.type);
     if (handler) {
+      console.log('[WS] Handling message:', message.type);
       handler(message.payload);
+    } else {
+      console.warn('[WS] No handler for message type:', message.type, message);
     }
   }
 
@@ -68,11 +116,27 @@ export class WebSocketClient {
     this.messageHandlers.delete(type);
   }
 
-  send(message: WebSocketMessage): void {
+  /** Send directly to the WebSocket without queueing */
+  private sendDirect(message: WebSocketMessage): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message));
+    }
+  }
+
+  send(message: WebSocketMessage): void {
+    // Track channel subscriptions so we can re-join after reconnect
+    if (message.type === 'JoinChannel') {
+      this.joinedChannels.add(message.payload.channel_id);
+    } else if (message.type === 'LeaveChannel') {
+      this.joinedChannels.delete(message.payload.channel_id);
+    }
+
+    if (this.ws?.readyState === WebSocket.OPEN && this.authenticated) {
+      console.log('[WS] Sending:', message.type, 'authenticated:', this.authenticated);
+      this.ws.send(JSON.stringify(message));
     } else {
-      console.error('WebSocket is not connected');
+      console.log('[WS] Queuing (not ready):', message.type, 'wsState:', this.ws?.readyState, 'auth:', this.authenticated);
+      this.pendingMessages.push(message);
     }
   }
 
@@ -81,11 +145,15 @@ export class WebSocketClient {
       this.ws.close();
       this.ws = null;
     }
+    this.authenticated = false;
+    this.pendingMessages = [];
   }
 
   isConnected(): boolean {
-    return this.ws?.readyState === WebSocket.OPEN;
+    return this.ws?.readyState === WebSocket.OPEN && this.authenticated;
   }
 }
 
-export const wsClient = new WebSocketClient('ws://localhost:8080/ws');
+// Use relative URL to leverage Vite's proxy in development
+const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`;
+export const wsClient = new WebSocketClient(wsUrl);

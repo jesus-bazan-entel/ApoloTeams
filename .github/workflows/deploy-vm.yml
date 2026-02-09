@@ -1,0 +1,141 @@
+# =============================================================================
+# Deploy to VM / VPS via Docker Compose (SSH)
+# =============================================================================
+# Alternative to Cloud Run. Deploys to any Linux server with Docker installed.
+# Works with: Compute Engine, AWS EC2, DigitalOcean, Hetzner, on-premise, etc.
+#
+# Required GitHub Secrets:
+#   DEPLOY_HOST           - Server IP or hostname
+#   DEPLOY_USER           - SSH user (e.g., deploy)
+#   DEPLOY_SSH_KEY        - Private SSH key for authentication
+#   DEPLOY_PATH           - Path on server (e.g., /opt/apolo-teams)
+#   REGISTRY_URL          - Docker registry (e.g., ghcr.io/your-org)
+#   ENV_FILE_CONTENT      - Content of production .env file (base64 encoded)
+# =============================================================================
+
+name: Deploy to VM
+
+on:
+  workflow_dispatch:  # Manual trigger only (use Cloud Run workflow for auto-deploy)
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+env:
+  IMAGE_NAME: apolo-teams
+
+jobs:
+  build-push:
+    name: Build & Push Image
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write  # For GitHub Container Registry
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy via SSH
+    runs-on: ubuntu-latest
+    needs: build-push
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write .env file
+        run: echo "${{ secrets.ENV_FILE_CONTENT }}" | base64 -d > .env.deploy
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            DEPLOY_DIR="${{ secrets.DEPLOY_PATH }}"
+            IMAGE="ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+
+            # Create deploy directory
+            mkdir -p "$DEPLOY_DIR"
+            cd "$DEPLOY_DIR"
+
+            # Login to registry
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+            # Pull new image
+            docker pull "$IMAGE"
+
+            # Update docker-compose to use the new image
+            cat > docker-compose.prod.yml << 'COMPOSE_EOF'
+            services:
+              app:
+                image: IMAGE_PLACEHOLDER
+            COMPOSE_EOF
+            sed -i "s|IMAGE_PLACEHOLDER|${IMAGE}|g" docker-compose.prod.yml
+
+            # Deploy with zero-downtime
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans
+
+            # Wait for health check
+            echo "Waiting for application to be healthy..."
+            for i in $(seq 1 30); do
+              if curl -sf http://localhost:8080/health > /dev/null 2>&1; then
+                echo "Application is healthy!"
+                exit 0
+              fi
+              sleep 2
+            done
+            echo "Health check failed after 60s"
+            docker compose logs --tail=50 app
+            exit 1
+
+      - name: Copy docker-compose.yml to server (first deploy only)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: "docker-compose.yml,.env.deploy"
+          target: ${{ secrets.DEPLOY_PATH }}
+          overwrite: true
+
+      - name: Rename .env on server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd "${{ secrets.DEPLOY_PATH }}"
+            [ -f .env.deploy ] && mv .env.deploy .env

@@ -1,0 +1,110 @@
+# =============================================================================
+# Deploy to Google Cloud Run
+# =============================================================================
+# Triggers on push to main (after CI passes)
+# Builds Docker image → pushes to Artifact Registry → deploys to Cloud Run
+#
+# Required GitHub Secrets:
+#   GCP_PROJECT_ID        - Google Cloud project ID
+#   GCP_REGION            - Region (e.g., us-central1, southamerica-east1)
+#   GCP_SA_KEY            - Service account JSON key (or use Workload Identity)
+#   CLOUD_SQL_INSTANCE    - Cloud SQL connection name (project:region:instance)
+#   DATABASE_URL          - PostgreSQL connection string for Cloud SQL
+#   JWT_SECRET            - JWT signing secret
+# =============================================================================
+
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: [main]
+
+env:
+  SERVICE_NAME: apolo-teams
+  IMAGE_NAME: apolo-teams
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    # Only deploy after CI passes
+    if: github.event_name == 'push'
+
+    permissions:
+      contents: read
+      id-token: write  # For Workload Identity Federation
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Authenticate with GCP ──────────────────────────────────────────────
+      # Option A: Service Account Key (simpler setup)
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          # Option B: Workload Identity (more secure, no key to rotate)
+          # workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          # service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # ── Build & Push Docker Image ──────────────────────────────────────────
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev --quiet
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/apolo-teams/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/apolo-teams/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ── Deploy to Cloud Run ────────────────────────────────────────────────
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          region: ${{ secrets.GCP_REGION }}
+          image: ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/apolo-teams/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          flags: |
+            --port=8080
+            --cpu=1
+            --memory=512Mi
+            --min-instances=1
+            --max-instances=5
+            --timeout=3600
+            --session-affinity
+            --allow-unauthenticated
+            --add-cloudsql-instances=${{ secrets.CLOUD_SQL_INSTANCE }}
+          env_vars: |
+            SERVER_HOST=0.0.0.0
+            SERVER_PORT=8080
+            RUST_LOG=info,rust_teams_backend=info
+            MAX_FILE_SIZE=104857600
+            UPLOAD_PATH=/tmp/uploads
+          secrets: |
+            DATABASE_URL=apolo-db-url:latest
+            JWT_SECRET=apolo-jwt-secret:latest
+
+      - name: Show deployment URL
+        run: |
+          URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region=${{ secrets.GCP_REGION }} \
+            --format='value(status.url)')
+          echo "## Deployed to Cloud Run" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** ${URL}" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,29 @@
+# Build artifacts
+target/
+frontend-react/node_modules/
+frontend-react/dist/
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment (use docker-compose env instead)
+.env
+
+# Documentation
+*.md
+!README.md
+
+# Misc
+.claude/
+api-tests.http
+scripts/
+data/
+uploads/
+static/

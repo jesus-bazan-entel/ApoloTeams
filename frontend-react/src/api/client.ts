@@ -14,6 +14,10 @@ import type {
   ChangePasswordRequest,
   Call,
   Notification,
+  Meeting,
+  CreateMeetingRequest,
+  UpdateMeetingRequest,
+  MeetingResponseStatus,
 } from '../types';
 
 const API_BASE_URL = '/api/v1';
@@ -252,8 +256,16 @@ class ApiClient {
   }
 
   // Calls
-  async startCall(data: { channel_id: string; call_type: 'audio' | 'video' }): Promise<Call> {
+  async startCall(data: { channel_id?: string; target_user_id?: string; call_type: 'audio' | 'video' }): Promise<Call> {
     const response = await axios.post<Call>(`${API_BASE_URL}/calls`, data);
+    return response.data;
+  }
+
+  async startDirectCall(targetUserId: string, callType: 'audio' | 'video'): Promise<Call> {
+    const response = await axios.post<Call>(`${API_BASE_URL}/calls`, {
+      target_user_id: targetUserId,
+      call_type: callType,
+    });
     return response.data;
   }
 
@@ -300,6 +312,60 @@ class ApiClient {
 
   async markAllNotificationsAsRead(): Promise<void> {
     await axios.post(`${API_BASE_URL}/notifications/read-all`);
+  }
+
+  // Meetings
+  async listMeetings(): Promise<Meeting[]> {
+    const response = await axios.get<Meeting[]>(`${API_BASE_URL}/meetings`);
+    return response.data;
+  }
+
+  async getMeeting(meetingId: string): Promise<Meeting> {
+    const response = await axios.get<Meeting>(`${API_BASE_URL}/meetings/${meetingId}`);
+    return response.data;
+  }
+
+  async getCalendarMeetings(startDate: string, endDate: string): Promise<Meeting[]> {
+    const response = await axios.get<Meeting[]>(
+      `${API_BASE_URL}/meetings/calendar?start_date=${startDate}&end_date=${endDate}`
+    );
+    return response.data;
+  }
+
+  async createMeeting(data: CreateMeetingRequest): Promise<Meeting> {
+    const response = await axios.post<Meeting>(`${API_BASE_URL}/meetings`, data);
+    return response.data;
+  }
+
+  async updateMeeting(meetingId: string, data: UpdateMeetingRequest): Promise<Meeting> {
+    const response = await axios.patch<Meeting>(`${API_BASE_URL}/meetings/${meetingId}`, data);
+    return response.data;
+  }
+
+  async cancelMeeting(meetingId: string): Promise<void> {
+    await axios.post(`${API_BASE_URL}/meetings/${meetingId}/cancel`);
+  }
+
+  async deleteMeeting(meetingId: string): Promise<void> {
+    await axios.delete(`${API_BASE_URL}/meetings/${meetingId}`);
+  }
+
+  async inviteToMeeting(meetingId: string, userIds: string[]): Promise<Meeting> {
+    const response = await axios.post<Meeting>(`${API_BASE_URL}/meetings/${meetingId}/invite`, {
+      user_ids: userIds,
+    });
+    return response.data;
+  }
+
+  async respondToMeeting(meetingId: string, response: MeetingResponseStatus): Promise<Meeting> {
+    const resp = await axios.post<Meeting>(`${API_BASE_URL}/meetings/${meetingId}/respond`, {
+      response,
+    });
+    return resp.data;
+  }
+
+  async removeFromMeeting(meetingId: string, userId: string): Promise<void> {
+    await axios.delete(`${API_BASE_URL}/meetings/${meetingId}/participants/${userId}`);
   }
 }
 

@@ -29,13 +29,13 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#f3f2f1] p-4">
-      <div className="w-full max-w-[440px] bg-white rounded-lg shadow-xl p-8 md:p-12">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-4">
+      <div className="w-full max-w-[440px] backdrop-blur-xl bg-white/95 rounded-2xl shadow-2xl p-8 md:p-12">
         <div className="mb-8 flex items-center gap-3">
-          <div className="w-10 h-10 flex items-center justify-center bg-[#4B53BC] rounded text-white font-bold text-xl">
-            TS
+          <div className="w-10 h-10 flex items-center justify-center bg-gradient-to-r from-indigo-600 to-cyan-500 rounded-xl text-white font-bold text-xl">
+            AN
           </div>
-          <h1 className="text-xl font-bold text-gray-800">TeamStream</h1>
+          <h1 className="text-xl font-bold text-gray-800">Apolo Next</h1>
         </div>
 
         <div className="mb-6">
@@ -44,7 +44,7 @@ function LoginPage() {
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 text-red-600 text-xs rounded border border-red-100">
+          <div className="mb-4 p-3 bg-red-50 text-red-600 text-xs rounded-xl border border-red-100">
             {error}
           </div>
         )}
@@ -57,7 +57,7 @@ function LoginPage() {
               <input
                 type="email"
                 required
-                className="w-full h-11 pl-10 pr-4 border-b-2 border-gray-200 focus:border-[#4B53BC] outline-none transition-colors text-sm"
+                className="input-teams pl-10"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
@@ -71,7 +71,7 @@ function LoginPage() {
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
-                className="w-full h-11 pl-10 pr-12 border-b-2 border-gray-200 focus:border-[#4B53BC] outline-none transition-colors text-sm"
+                className="input-teams pl-10 pr-12"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
@@ -88,7 +88,7 @@ function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full h-11 bg-[#4B53BC] text-white rounded font-semibold flex items-center justify-center gap-2 hover:bg-[#3b43a3] transition-all disabled:opacity-70"
+            className="btn-teams-primary w-full"
           >
             {isLoading ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -100,13 +100,13 @@ function LoginPage() {
 
           <Link
             to="/register"
-            className="w-full h-11 text-[#4B53BC] text-sm font-semibold hover:bg-gray-50 rounded transition-colors flex items-center justify-center"
+            className="w-full h-11 text-indigo-600 text-sm font-semibold hover:bg-indigo-50 rounded-xl transition-colors flex items-center justify-center"
           >
             ¿No tienes cuenta? Regístrate
           </Link>
         </form>
       </div>
-      <div className="absolute bottom-8 text-gray-400 text-xs flex items-center gap-2 font-medium">
+      <div className="absolute bottom-8 text-slate-400 text-xs flex items-center gap-2 font-medium">
         <ShieldCheck size={14} />
         <span>Conexión segura via Rust + Postgres</span>
       </div>

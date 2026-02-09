@@ -1,0 +1,58 @@
+services:
+  # ─────────────────────────────────────────────
+  # PostgreSQL Database
+  # ─────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: apolo-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-rust_teams}
+      POSTGRES_USER: ${POSTGRES_USER:-apolo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "${DB_EXTERNAL_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-apolo} -d ${POSTGRES_DB:-rust_teams}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────────
+  # ApoloTeams Application (Backend + Frontend)
+  # ─────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: apolo-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SERVER_HOST: "0.0.0.0"
+      SERVER_PORT: "8080"
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-apolo}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-rust_teams}"
+      DATABASE_MAX_CONNECTIONS: "${DATABASE_MAX_CONNECTIONS:-10}"
+      JWT_SECRET: "${JWT_SECRET:?Set JWT_SECRET in .env}"
+      JWT_ACCESS_TOKEN_EXPIRY: "${JWT_ACCESS_TOKEN_EXPIRY:-3600}"
+      JWT_REFRESH_TOKEN_EXPIRY: "${JWT_REFRESH_TOKEN_EXPIRY:-604800}"
+      UPLOAD_PATH: "./uploads"
+      MAX_FILE_SIZE: "${MAX_FILE_SIZE:-104857600}"
+      RUST_LOG: "${RUST_LOG:-info,rust_teams_backend=debug}"
+    volumes:
+      - uploads:/app/uploads
+      - appdata:/app/data
+    ports:
+      - "${APP_PORT:-8080}:8080"
+
+volumes:
+  pgdata:
+    driver: local
+  uploads:
+    driver: local
+  appdata:
+    driver: local

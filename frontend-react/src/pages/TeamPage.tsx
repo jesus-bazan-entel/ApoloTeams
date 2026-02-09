@@ -3,67 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../store';
 import { apiClient } from '../api/client';
 import type { Channel, User } from '../types';
-
-// Icons
-const HashIcon = () => (
-  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-    <path fillRule="evenodd" d="M9.243 3.03a1 1 0 01.727 1.213L9.53 6h2.94l.56-2.243a1 1 0 111.94.486L14.53 6H17a1 1 0 110 2h-2.97l-1 4H15a1 1 0 110 2h-2.47l-.56 2.242a1 1 0 11-1.94-.485L10.47 14H7.53l-.56 2.242a1 1 0 11-1.94-.485L5.47 14H3a1 1 0 110-2h2.97l1-4H5a1 1 0 110-2h2.47l.56-2.243a1 1 0 011.213-.727zM9.03 8l-1 4h2.94l1-4H9.03z" clipRule="evenodd" />
-  </svg>
-);
-
-const ArrowLeftIcon = () => (
-  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-    <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-  </svg>
-);
-
-const PlusIcon = () => (
-  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-    <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-  </svg>
-);
-
-const UsersIcon = () => (
-  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
-  </svg>
-);
-
-const CalendarIcon = () => (
-  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-    <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-  </svg>
-);
-
-const CrownIcon = () => (
-  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-    <path d="M10 2l2.5 5 5.5.5-4 4 1 5.5L10 14l-5 3 1-5.5-4-4 5.5-.5L10 2z" />
-  </svg>
-);
-
-const SettingsIcon = () => (
-  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-    <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-  </svg>
-);
-
-const SearchIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-  </svg>
-);
-
-const CheckIcon = () => (
-  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-  </svg>
-);
-
-const UserPlusIcon = () => (
-  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-    <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
-  </svg>
-);
+import { ArrowLeft, Settings, Plus, Hash, Users, Search, UserPlus, Check, Star, ChevronRight } from 'lucide-react';
 
 function TeamPage() {
   const { teamId } = useParams<{ teamId: string }>();
@@ -194,29 +134,29 @@ function TeamPage() {
 
   const getChannelColor = (index: number) => {
     const colors = [
-      'bg-teams-purple',
-      'bg-teams-blue',
-      'bg-emerald-500',
-      'bg-orange-500',
-      'bg-pink-500',
+      'bg-indigo-600',
       'bg-cyan-500',
+      'bg-emerald-500',
+      'bg-amber-500',
+      'bg-rose-500',
+      'bg-violet-500',
     ];
     return colors[index % colors.length];
   };
 
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="h-full overflow-y-auto bg-surface">
       {/* Header */}
-      <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm">
+      <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shadow-sm">
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate('/')}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
           >
-            <ArrowLeftIcon />
+            <ArrowLeft size={20} />
           </button>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-teams-purple flex items-center justify-center text-white font-bold">
+            <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold">
               {team ? getInitials(team.name) : 'T'}
             </div>
             <div>
@@ -226,8 +166,8 @@ function TeamPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Team settings">
-            <SettingsIcon />
+          <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors" title="Team settings">
+            <Settings size={20} />
           </button>
         </div>
       </header>
@@ -243,7 +183,7 @@ function TeamPage() {
                 onClick={() => setShowCreateChannel(true)}
                 className="btn-teams-primary flex items-center gap-2"
               >
-                <PlusIcon />
+                <Plus size={20} />
                 New Channel
               </button>
             </div>
@@ -253,14 +193,14 @@ function TeamPage() {
               {loading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="flex flex-col items-center gap-4">
-                    <div className="w-10 h-10 border-4 border-teams-purple-200 border-t-teams-purple rounded-full animate-spin"></div>
+                    <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
                     <p className="text-gray-500">Loading channels...</p>
                   </div>
                 </div>
               ) : channels.length === 0 ? (
                 <div className="text-center py-12">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-teams-purple-50 flex items-center justify-center">
-                    <HashIcon />
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
+                    <Hash size={20} />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">No channels yet</h3>
                   <p className="text-gray-500 mb-6">Create your first channel to start collaborating</p>
@@ -272,18 +212,18 @@ function TeamPage() {
                   </button>
                 </div>
               ) : (
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-slate-100">
                   {channels.map((channel: Channel, index: number) => (
                     <div
                       key={channel.id}
                       onClick={() => navigate(`/chat/${channel.id}`)}
-                      className="flex items-center gap-4 p-4 hover:bg-gray-50 cursor-pointer transition-colors group"
+                      className="flex items-center gap-4 p-4 hover:bg-slate-50 cursor-pointer transition-colors group"
                     >
                       <div className={`w-12 h-12 rounded-lg ${getChannelColor(index)} flex items-center justify-center text-white`}>
-                        <HashIcon />
+                        <Hash size={20} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 group-hover:text-teams-purple transition-colors">
+                        <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
                           {channel.name}
                         </h3>
                         <p className="text-sm text-gray-500 truncate">
@@ -291,12 +231,10 @@ function TeamPage() {
                         </p>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-400">
-                        <UsersIcon />
+                        <Users size={20} />
                         <span>{channel.member_count}</span>
                       </div>
-                      <svg className="w-5 h-5 text-gray-400 group-hover:text-teams-purple group-hover:translate-x-1 transition-all" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                      </svg>
+                      <ChevronRight size={18} className="text-gray-400 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" />
                     </div>
                   ))}
                 </div>
@@ -309,7 +247,7 @@ function TeamPage() {
             {/* Team Details Card */}
             <div className="card-teams">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">About this team</h3>
-              
+
               <div className="space-y-4">
                 {team?.description && (
                   <div>
@@ -317,10 +255,10 @@ function TeamPage() {
                   </div>
                 )}
 
-                <div className="pt-4 border-t border-gray-100 space-y-3">
+                <div className="pt-4 border-t border-slate-100 space-y-3">
                   <div className="flex items-center gap-3 text-sm">
-                    <div className="w-8 h-8 rounded-lg bg-teams-purple-50 flex items-center justify-center text-teams-purple">
-                      <CrownIcon />
+                    <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                      <Star size={16} />
                     </div>
                     <div>
                       <p className="text-gray-500">Owner</p>
@@ -332,7 +270,7 @@ function TeamPage() {
 
                   <div className="flex items-center gap-3 text-sm">
                     <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
-                      <UsersIcon />
+                      <Users size={20} />
                     </div>
                     <div>
                       <p className="text-gray-500">Members</p>
@@ -342,7 +280,7 @@ function TeamPage() {
 
                   <div className="flex items-center gap-3 text-sm">
                     <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center text-orange-600">
-                      <CalendarIcon />
+                      <Users size={20} />
                     </div>
                     <div>
                       <p className="text-gray-500">Created</p>
@@ -365,16 +303,16 @@ function TeamPage() {
               <div className="space-y-2">
                 <button
                   onClick={handleOpenInviteModal}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 transition-colors text-left"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-teams-purple-50 flex items-center justify-center text-teams-purple">
-                    <UserPlusIcon />
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                    <UserPlus size={20} />
                   </div>
                   <span className="font-medium text-gray-700">Invite Members</span>
                 </button>
-                <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors text-left">
-                  <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
-                    <SettingsIcon />
+                <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 transition-colors text-left">
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-gray-600">
+                    <Settings size={20} />
                   </div>
                   <span className="font-medium text-gray-700">Team Settings</span>
                 </button>
@@ -404,7 +342,7 @@ function TeamPage() {
                         className="flex items-center gap-3"
                       >
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold ${
-                          isOwner ? 'bg-teams-purple' : 'bg-emerald-500'
+                          isOwner ? 'bg-indigo-600' : 'bg-emerald-500'
                         }`}>
                           {member.user?.display_name?.[0]?.toUpperCase() ||
                            member.user?.username?.[0]?.toUpperCase() ||
@@ -414,13 +352,13 @@ function TeamPage() {
                           <p className="font-medium text-gray-900 truncate">
                             {member.user?.display_name || member.user?.username || 'Unknown User'}
                             {isCurrentUser && (
-                              <span className="text-teams-purple ml-1">(You)</span>
+                              <span className="text-indigo-600 ml-1">(You)</span>
                             )}
                           </p>
                           <div className="flex items-center gap-1 text-sm text-gray-500">
                             {isOwner && (
-                              <span className="text-teams-purple flex items-center gap-1">
-                                <CrownIcon />
+                              <span className="text-indigo-600 flex items-center gap-1">
+                                <Star size={14} />
                               </span>
                             )}
                             <span>{member.role || 'member'}</span>
@@ -438,9 +376,9 @@ function TeamPage() {
 
       {/* Create Channel Modal */}
       {showCreateChannel && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in">
-          <div className="bg-white rounded-lg shadow-teams-xl w-full max-w-md mx-4 animate-in">
-            <div className="p-6 border-b border-gray-200">
+        <div className="modal-overlay">
+          <div className="modal-content w-full max-w-md mx-4">
+            <div className="p-6 border-b border-slate-200">
               <h2 className="text-xl font-semibold text-gray-900">Create a new channel</h2>
               <p className="text-sm text-gray-500 mt-1">Channels are where your team communicates.</p>
             </div>
@@ -504,9 +442,9 @@ function TeamPage() {
 
       {/* Invite Members Modal */}
       {showInviteModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in">
-          <div className="bg-white rounded-lg shadow-teams-xl w-full max-w-md mx-4 animate-in max-h-[80vh] flex flex-col">
-            <div className="p-6 border-b border-gray-200">
+        <div className="modal-overlay">
+          <div className="modal-content w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
+            <div className="p-6 border-b border-slate-200">
               <h2 className="text-xl font-semibold text-gray-900">Invite Members</h2>
               <p className="text-sm text-gray-500 mt-1">Search for users to add to {team?.name}</p>
             </div>
@@ -515,7 +453,7 @@ function TeamPage() {
               {/* Search Input */}
               <div className="relative mb-4">
                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-                  <SearchIcon />
+                  <Search size={20} />
                 </span>
                 <input
                   type="text"
@@ -530,7 +468,7 @@ function TeamPage() {
               {/* Search Results */}
               {searchingUsers ? (
                 <div className="flex items-center justify-center py-8">
-                  <div className="w-8 h-8 border-4 border-teams-purple-200 border-t-teams-purple rounded-full animate-spin"></div>
+                  <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
                 </div>
               ) : searchedUsers.length > 0 ? (
                 <div className="space-y-2 mb-6">
@@ -538,10 +476,10 @@ function TeamPage() {
                   {searchedUsers.map((user) => (
                     <div
                       key={user.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                      className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-teams-purple flex items-center justify-center text-white font-semibold">
+                        <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-semibold">
                           {user.display_name?.[0]?.toUpperCase() || user.username[0].toUpperCase()}
                         </div>
                         <div>
@@ -579,7 +517,7 @@ function TeamPage() {
                     {teamMembers.map((member) => (
                       <div
                         key={member.user_id || member.user?.id}
-                        className="flex items-center gap-3 p-3 rounded-lg bg-gray-50"
+                        className="flex items-center gap-3 p-3 rounded-xl bg-slate-50"
                       >
                         <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-semibold">
                           {member.user?.display_name?.[0]?.toUpperCase() ||
@@ -590,12 +528,12 @@ function TeamPage() {
                           <p className="font-medium text-gray-900">
                             {member.user?.display_name || member.user?.username || 'Unknown User'}
                             {member.user_id === currentUser?.id && (
-                              <span className="text-teams-purple ml-2">(You)</span>
+                              <span className="text-indigo-600 ml-2">(You)</span>
                             )}
                           </p>
                           <p className="text-sm text-gray-500">{member.role || 'member'}</p>
                         </div>
-                        <CheckIcon />
+                        <Check size={18} className="text-emerald-500" />
                       </div>
                     ))}
                   </div>
@@ -603,7 +541,7 @@ function TeamPage() {
               )}
             </div>
 
-            <div className="p-6 border-t border-gray-200">
+            <div className="p-6 border-t border-slate-200">
               <button
                 onClick={() => {
                   setShowInviteModal(false);

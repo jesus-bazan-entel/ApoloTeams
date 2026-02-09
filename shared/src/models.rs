@@ -272,3 +272,83 @@ pub struct RefreshToken {
     pub expires_at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
 }
+
+/// Meeting status
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum MeetingStatus {
+    Scheduled,
+    InProgress,
+    Completed,
+    Cancelled,
+}
+
+impl Default for MeetingStatus {
+    fn default() -> Self {
+        Self::Scheduled
+    }
+}
+
+/// Meeting participant response status
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum MeetingResponseStatus {
+    Pending,
+    Accepted,
+    Declined,
+    Tentative,
+}
+
+impl Default for MeetingResponseStatus {
+    fn default() -> Self {
+        Self::Pending
+    }
+}
+
+/// Meeting recurrence type
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum RecurrenceType {
+    None,
+    Daily,
+    Weekly,
+    Monthly,
+}
+
+impl Default for RecurrenceType {
+    fn default() -> Self {
+        Self::None
+    }
+}
+
+/// Meeting model
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Meeting {
+    pub id: Uuid,
+    pub title: String,
+    pub description: Option<String>,
+    pub organizer_id: Uuid,
+    pub start_time: DateTime<Utc>,
+    pub end_time: DateTime<Utc>,
+    pub timezone: String,
+    pub status: MeetingStatus,
+    pub is_online: bool,
+    pub meeting_link: Option<String>,
+    pub location: Option<String>,
+    pub recurrence: RecurrenceType,
+    pub channel_id: Option<Uuid>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Meeting participant model
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct MeetingParticipant {
+    pub id: Uuid,
+    pub meeting_id: Uuid,
+    pub user_id: Uuid,
+    pub response_status: MeetingResponseStatus,
+    pub is_organizer: bool,
+    pub invited_at: DateTime<Utc>,
+    pub responded_at: Option<DateTime<Utc>>,
+}

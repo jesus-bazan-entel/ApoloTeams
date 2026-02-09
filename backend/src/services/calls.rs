@@ -2,7 +2,7 @@
 
 use shared::dto::{CallParticipantResponse, CallResponse, UserResponse};
 use shared::error::AppError;
-use shared::models::{CallStatus, CallType};
+use shared::models::{CallStatus, CallType, ChannelType};
 use sqlx::PgPool;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -45,6 +45,68 @@ impl CallService {
         }
 
         let call = CallRepository::create(&self.pool, channel_id, initiator_id, call_type)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+        self.get_call_response(&call.id).await
+    }
+
+    /// Start a direct call to another user (creates DM channel if needed)
+    pub async fn start_direct_call(
+        &self,
+        initiator_id: &Uuid,
+        target_user_id: &Uuid,
+        call_type: CallType,
+    ) -> Result<CallResponse, AppError> {
+        // Verify target user exists
+        UserRepository::find_by_id(&self.pool, target_user_id)
+            .await
+            .map_err(|_| AppError::NotFoundError("Target user not found".to_string()))?;
+
+        // Find or create DM channel between the two users
+        let channel = match ChannelRepository::find_dm_channel(&self.pool, initiator_id, target_user_id)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?
+        {
+            Some(ch) => ch,
+            None => {
+                // Create DM channel
+                let other_user = UserRepository::find_by_id(&self.pool, target_user_id)
+                    .await
+                    .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+                let channel = ChannelRepository::create(
+                    &self.pool,
+                    None,
+                    &format!("DM: {}", other_user.display_name),
+                    None,
+                    ChannelType::DirectMessage,
+                    initiator_id,
+                )
+                .await
+                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+                // Add target user to channel
+                ChannelRepository::add_member(&self.pool, &channel.id, target_user_id)
+                    .await
+                    .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+                channel
+            }
+        };
+
+        // Check if there's already an active call in this channel
+        if let Some(_) = CallRepository::find_active_by_channel(&self.pool, &channel.id)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?
+        {
+            return Err(AppError::ConflictError(
+                "There's already an active call with this user".to_string(),
+            ));
+        }
+
+        // Create the call
+        let call = CallRepository::create(&self.pool, &channel.id, initiator_id, call_type)
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 

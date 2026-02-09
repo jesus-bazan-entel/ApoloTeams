@@ -8,7 +8,8 @@ use uuid::Uuid;
 use validator::Validate;
 
 use crate::models::{
-    CallStatus, CallType, ChannelType, MessageType, TeamRole, UserStatus,
+    CallStatus, CallType, ChannelType, MessageType, MeetingResponseStatus, MeetingStatus,
+    RecurrenceType, TeamRole, UserStatus,
 };
 
 // ============================================================================
@@ -254,7 +255,10 @@ pub struct UploadFileResponse {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct StartCallRequest {
-    pub channel_id: Uuid,
+    /// Channel ID for channel-based calls (optional if target_user_id is provided)
+    pub channel_id: Option<Uuid>,
+    /// Target user ID for direct calls (creates DM channel automatically)
+    pub target_user_id: Option<Uuid>,
     pub call_type: CallType,
 }
 
@@ -299,6 +303,8 @@ pub enum WebSocketMessage {
     StartTyping { channel_id: Uuid },
     StopTyping { channel_id: Uuid },
     UpdateStatus { status: UserStatus, status_message: Option<String> },
+    JoinCall { call_id: Uuid },
+    LeaveCall { call_id: Uuid },
     
     // Server -> Client
     Authenticated { user: UserResponse },
@@ -316,7 +322,13 @@ pub enum WebSocketMessage {
     ParticipantJoined { call_id: Uuid, participant: CallParticipantResponse },
     ParticipantLeft { call_id: Uuid, user_id: Uuid },
     Notification { notification: NotificationResponse },
-    
+
+    // Meeting events
+    MeetingInvite { meeting: MeetingResponse },
+    MeetingUpdated { meeting: MeetingResponse },
+    MeetingCancelled { meeting_id: Uuid },
+    MeetingStarting { meeting: MeetingResponse },
+
     // WebRTC Signaling
     WebRTCOffer { call_id: Uuid, from_user_id: Uuid, sdp: String },
     WebRTCAnswer { call_id: Uuid, from_user_id: Uuid, sdp: String },
@@ -378,4 +390,83 @@ pub struct PaginatedResponse<T: PartialEq> {
     pub items: Vec<T>,
     pub total_count: i64,
     pub has_more: bool,
+}
+
+// ============================================================================
+// Meeting DTOs
+// ============================================================================
+
+#[derive(Debug, Clone, Serialize, Deserialize, Validate, PartialEq)]
+pub struct CreateMeetingRequest {
+    #[validate(length(min = 1, max = 200, message = "Title must be 1-200 characters"))]
+    pub title: String,
+    #[validate(length(max = 2000, message = "Description must be at most 2000 characters"))]
+    pub description: Option<String>,
+    pub start_time: DateTime<Utc>,
+    pub end_time: DateTime<Utc>,
+    pub timezone: Option<String>,
+    pub is_online: Option<bool>,
+    pub location: Option<String>,
+    pub recurrence: Option<RecurrenceType>,
+    pub participant_ids: Option<Vec<Uuid>>,
+    pub channel_id: Option<Uuid>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Validate, PartialEq)]
+pub struct UpdateMeetingRequest {
+    #[validate(length(min = 1, max = 200, message = "Title must be 1-200 characters"))]
+    pub title: Option<String>,
+    #[validate(length(max = 2000, message = "Description must be at most 2000 characters"))]
+    pub description: Option<String>,
+    pub start_time: Option<DateTime<Utc>>,
+    pub end_time: Option<DateTime<Utc>>,
+    pub timezone: Option<String>,
+    pub is_online: Option<bool>,
+    pub location: Option<String>,
+    pub recurrence: Option<RecurrenceType>,
+    pub status: Option<MeetingStatus>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct MeetingResponse {
+    pub id: Uuid,
+    pub title: String,
+    pub description: Option<String>,
+    pub organizer: UserResponse,
+    pub start_time: DateTime<Utc>,
+    pub end_time: DateTime<Utc>,
+    pub timezone: String,
+    pub status: MeetingStatus,
+    pub is_online: bool,
+    pub meeting_link: Option<String>,
+    pub location: Option<String>,
+    pub recurrence: RecurrenceType,
+    pub channel_id: Option<Uuid>,
+    pub participants: Vec<MeetingParticipantResponse>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct MeetingParticipantResponse {
+    pub user: UserResponse,
+    pub response_status: MeetingResponseStatus,
+    pub is_organizer: bool,
+    pub invited_at: DateTime<Utc>,
+    pub responded_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct MeetingInviteRequest {
+    pub user_ids: Vec<Uuid>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct MeetingResponseRequest {
+    pub response: MeetingResponseStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CalendarQuery {
+    pub start_date: DateTime<Utc>,
+    pub end_date: DateTime<Utc>,
 }

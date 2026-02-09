@@ -7,6 +7,7 @@ pub mod messages;
 pub mod files;
 pub mod calls;
 pub mod notifications;
+pub mod meetings;
 
 pub use users::*;
 pub use teams::*;
@@ -15,3 +16,4 @@ pub use messages::*;
 pub use files::*;
 pub use calls::*;
 pub use notifications::*;
+pub use meetings::*;

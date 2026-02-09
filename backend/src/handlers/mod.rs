@@ -5,6 +5,7 @@ pub mod calls;
 pub mod channels;
 pub mod files;
 pub mod health;
+pub mod meetings;
 pub mod messages;
 pub mod notifications;
 pub mod search;

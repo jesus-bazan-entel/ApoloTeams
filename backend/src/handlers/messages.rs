@@ -2,7 +2,7 @@
 
 use actix_web::{web, HttpRequest, HttpResponse};
 use chrono::{DateTime, Utc};
-use shared::dto::{AddReactionRequest, SendMessageRequest, UpdateMessageRequest};
+use shared::dto::{AddReactionRequest, SendMessageRequest, UpdateMessageRequest, WebSocketMessage};
 use std::sync::Arc;
 use uuid::Uuid;
 use validator::Validate;
@@ -10,6 +10,7 @@ use validator::Validate;
 use crate::error::{ApiError, ApiResult};
 use crate::middleware::get_user_id_from_request;
 use crate::services::Services;
+use crate::websocket::WebSocketServer;
 
 #[derive(serde::Deserialize)]
 pub struct ListMessagesQuery {
@@ -44,6 +45,7 @@ pub async fn list_messages(
 pub async fn send_message(
     req: HttpRequest,
     services: web::Data<Arc<Services>>,
+    ws_server: web::Data<Arc<WebSocketServer>>,
     path: web::Path<Uuid>,
     body: web::Json<SendMessageRequest>,
 ) -> ApiResult<HttpResponse> {
@@ -57,6 +59,11 @@ pub async fn send_message(
         .send_message(&channel_id, &user_id, body.into_inner())
         .await?;
 
+    // Broadcast new message to all channel subscribers except sender
+    tracing::info!("Broadcasting NewMessage to channel {} (excluding sender {})", channel_id, user_id);
+    let ws_msg = WebSocketMessage::NewMessage { message: message.clone() };
+    ws_server.broadcast_to_channel(&channel_id, &ws_msg, Some(&user_id));
+
     Ok(HttpResponse::Created().json(message))
 }
 
@@ -69,6 +76,7 @@ pub struct MessagePath {
 pub async fn update_message(
     req: HttpRequest,
     services: web::Data<Arc<Services>>,
+    ws_server: web::Data<Arc<WebSocketServer>>,
     path: web::Path<MessagePath>,
     body: web::Json<UpdateMessageRequest>,
 ) -> ApiResult<HttpResponse> {
@@ -82,12 +90,17 @@ pub async fn update_message(
         .update_message(&params.message_id, &user_id, body.into_inner())
         .await?;
 
+    // Broadcast updated message to all channel subscribers
+    let ws_msg = WebSocketMessage::MessageUpdated { message: message.clone() };
+    ws_server.broadcast_to_channel(&params.channel_id, &ws_msg, None);
+
     Ok(HttpResponse::Ok().json(message))
 }
 
 pub async fn delete_message(
     req: HttpRequest,
     services: web::Data<Arc<Services>>,
+    ws_server: web::Data<Arc<WebSocketServer>>,
     path: web::Path<MessagePath>,
 ) -> ApiResult<HttpResponse> {
     let user_id = get_user_id_from_request(&req, &services)?;
@@ -97,6 +110,13 @@ pub async fn delete_message(
         .messages
         .delete_message(&params.message_id, &user_id)
         .await?;
+
+    // Broadcast message deletion to all channel subscribers
+    let ws_msg = WebSocketMessage::MessageDeleted {
+        channel_id: params.channel_id,
+        message_id: params.message_id,
+    };
+    ws_server.broadcast_to_channel(&params.channel_id, &ws_msg, None);
 
     Ok(HttpResponse::NoContent().finish())
 }

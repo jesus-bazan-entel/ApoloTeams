@@ -100,6 +100,37 @@ export interface Notification {
   created_at: string;
 }
 
+// Meeting types
+export interface Meeting {
+  id: string;
+  title: string;
+  description?: string;
+  organizer: User;
+  start_time: string;
+  end_time: string;
+  timezone: string;
+  status: MeetingStatus;
+  is_online: boolean;
+  meeting_link?: string;
+  location?: string;
+  recurrence: RecurrenceType;
+  channel_id?: string;
+  participants: MeetingParticipant[];
+  created_at: string;
+}
+
+export type MeetingStatus = 'scheduled' | 'inprogress' | 'completed' | 'cancelled';
+export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly';
+export type MeetingResponseStatus = 'pending' | 'accepted' | 'declined' | 'tentative';
+
+export interface MeetingParticipant {
+  user: User;
+  response_status: MeetingResponseStatus;
+  is_organizer: boolean;
+  invited_at: string;
+  responded_at?: string;
+}
+
 // API Request/Response types
 export interface AuthResponse {
   access_token: string;
@@ -154,8 +185,47 @@ export interface ChangePasswordRequest {
   new_password: string;
 }
 
+export interface CreateMeetingRequest {
+  title: string;
+  description?: string;
+  start_time: string;
+  end_time: string;
+  timezone?: string;
+  is_online?: boolean;
+  location?: string;
+  recurrence?: RecurrenceType;
+  participant_ids?: string[];
+  channel_id?: string;
+}
+
+export interface UpdateMeetingRequest {
+  title?: string;
+  description?: string;
+  start_time?: string;
+  end_time?: string;
+  timezone?: string;
+  is_online?: boolean;
+  location?: string;
+  recurrence?: RecurrenceType;
+  status?: MeetingStatus;
+}
+
+export interface MeetingInviteRequest {
+  user_ids: string[];
+}
+
+export interface MeetingResponseRequest {
+  response: MeetingResponseStatus;
+}
+
+export interface CalendarQuery {
+  start_date: string;
+  end_date: string;
+}
+
 // WebSocket message types
 export type WebSocketMessage =
+  // Client -> Server
   | { type: 'Authenticate'; payload: { token: string } }
   | { type: 'JoinChannel'; payload: { channel_id: string } }
   | { type: 'LeaveChannel'; payload: { channel_id: string } }
@@ -163,6 +233,9 @@ export type WebSocketMessage =
   | { type: 'StartTyping'; payload: { channel_id: string } }
   | { type: 'StopTyping'; payload: { channel_id: string } }
   | { type: 'UpdateStatus'; payload: { status: UserStatus; status_message?: string } }
+  | { type: 'JoinCall'; payload: { call_id: string } }
+  | { type: 'LeaveCall'; payload: { call_id: string } }
+  // Server -> Client
   | { type: 'Authenticated'; payload: { user: User } }
   | { type: 'Error'; payload: { code: string; message: string } }
   | { type: 'NewMessage'; payload: { message: Message } }
@@ -178,6 +251,12 @@ export type WebSocketMessage =
   | { type: 'ParticipantJoined'; payload: { call_id: string; participant: CallParticipant } }
   | { type: 'ParticipantLeft'; payload: { call_id: string; user_id: string } }
   | { type: 'Notification'; payload: { notification: Notification } }
+  // Meeting events
+  | { type: 'MeetingInvite'; payload: { meeting: Meeting } }
+  | { type: 'MeetingUpdated'; payload: { meeting: Meeting } }
+  | { type: 'MeetingCancelled'; payload: { meeting_id: string } }
+  | { type: 'MeetingStarting'; payload: { meeting: Meeting } }
+  // WebRTC Signaling
   | { type: 'WebRTCOffer'; payload: { call_id: string; from_user_id: string; sdp: string } }
   | { type: 'WebRTCAnswer'; payload: { call_id: string; from_user_id: string; sdp: string } }
   | { type: 'WebRTCIceCandidate'; payload: { call_id: string; from_user_id: string; candidate: string } };

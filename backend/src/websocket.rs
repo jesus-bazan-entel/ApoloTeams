@@ -9,6 +9,7 @@ use shared::models::UserStatus;
 use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::broadcast;
+use tracing::{debug, info, warn};
 use uuid::Uuid;
 
 use crate::services::Services;
@@ -21,6 +22,8 @@ pub struct WebSocketServer {
     channel_subscriptions: DashMap<Uuid, HashSet<Uuid>>,
     /// Map of user_id to their current status
     user_statuses: DashMap<Uuid, UserStatus>,
+    /// Map of call_id to set of user_ids participating in the call
+    call_subscriptions: DashMap<Uuid, HashSet<Uuid>>,
 }
 
 impl WebSocketServer {
@@ -29,6 +32,7 @@ impl WebSocketServer {
             connections: DashMap::new(),
             channel_subscriptions: DashMap::new(),
             user_statuses: DashMap::new(),
+            call_subscriptions: DashMap::new(),
         }
     }
 
@@ -47,6 +51,11 @@ impl WebSocketServer {
 
         // Remove from all channel subscriptions
         for mut entry in self.channel_subscriptions.iter_mut() {
+            entry.value_mut().remove(user_id);
+        }
+
+        // Remove from all call subscriptions
+        for mut entry in self.call_subscriptions.iter_mut() {
             entry.value_mut().remove(user_id);
         }
     }
@@ -80,16 +89,36 @@ impl WebSocketServer {
         if let Some(subscribers) = self.channel_subscriptions.get(channel_id) {
             let json = match serde_json::to_string(message) {
                 Ok(j) => j,
-                Err(_) => return,
+                Err(e) => {
+                    warn!("Failed to serialize WS message: {}", e);
+                    return;
+                }
             };
+
+            let subscriber_count = subscribers.len();
+            let mut sent_count = 0;
+            let mut no_connection_count = 0;
+            let mut send_error_count = 0;
 
             for user_id in subscribers.iter() {
                 if exclude_user.map_or(true, |excluded| excluded != user_id) {
                     if let Some(sender) = self.connections.get(user_id) {
-                        let _ = sender.send(json.clone());
+                        match sender.send(json.clone()) {
+                            Ok(_) => sent_count += 1,
+                            Err(_) => send_error_count += 1,
+                        }
+                    } else {
+                        no_connection_count += 1;
                     }
                 }
             }
+
+            debug!(
+                "Broadcast to channel {}: {} subscribers, {} sent, {} no connection, {} send errors",
+                channel_id, subscriber_count, sent_count, no_connection_count, send_error_count
+            );
+        } else {
+            debug!("Broadcast to channel {}: no subscribers found", channel_id);
         }
     }
 
@@ -130,6 +159,52 @@ impl WebSocketServer {
             })
             .unwrap_or_default()
     }
+
+    /// Subscribe user to a call
+    pub fn subscribe_to_call(&self, call_id: Uuid, user_id: Uuid) {
+        self.call_subscriptions
+            .entry(call_id)
+            .or_insert_with(HashSet::new)
+            .insert(user_id);
+    }
+
+    /// Unsubscribe user from a call
+    pub fn unsubscribe_from_call(&self, call_id: &Uuid, user_id: &Uuid) {
+        if let Some(mut participants) = self.call_subscriptions.get_mut(call_id) {
+            participants.remove(user_id);
+        }
+    }
+
+    /// Send message to all participants in a call
+    pub fn send_to_call_participants(&self, call_id: &Uuid, message: &WebSocketMessage, exclude_user: Option<&Uuid>) {
+        if let Some(participants) = self.call_subscriptions.get(call_id) {
+            let json = match serde_json::to_string(message) {
+                Ok(j) => j,
+                Err(_) => return,
+            };
+
+            for user_id in participants.iter() {
+                if exclude_user.map_or(true, |excluded| excluded != user_id) {
+                    if let Some(sender) = self.connections.get(user_id) {
+                        let _ = sender.send(json.clone());
+                    }
+                }
+            }
+        }
+    }
+
+    /// Get participants in a call
+    pub fn get_call_participants(&self, call_id: &Uuid) -> Vec<Uuid> {
+        self.call_subscriptions
+            .get(call_id)
+            .map(|participants| participants.iter().copied().collect())
+            .unwrap_or_default()
+    }
+
+    /// Remove call subscription entirely (when call ends)
+    pub fn remove_call(&self, call_id: &Uuid) {
+        self.call_subscriptions.remove(call_id);
+    }
 }
 
 /// WebSocket connection handler
@@ -160,6 +235,7 @@ pub async fn ws_handler(
                             // Verify token and get user
                             match services.auth.verify_access_token(&token) {
                                 Ok(uid) => {
+                                    info!("WebSocket authenticated: user {}", uid);
                                     user_id = Some(uid);
                                     let receiver = ws_server.register(uid);
 
@@ -174,15 +250,31 @@ pub async fn ws_handler(
                                     // Start listening for broadcasts
                                     let mut rx = receiver;
                                     let mut session_clone = session.clone();
+                                    let uid_for_task = uid;
                                     actix_rt::spawn(async move {
-                                        while let Ok(msg) = rx.recv().await {
-                                            if session_clone.text(msg).await.is_err() {
-                                                break;
+                                        loop {
+                                            match rx.recv().await {
+                                                Ok(msg) => {
+                                                    if session_clone.text(msg).await.is_err() {
+                                                        info!("WebSocket session closed for user {}", uid_for_task);
+                                                        break;
+                                                    }
+                                                }
+                                                Err(broadcast::error::RecvError::Lagged(n)) => {
+                                                    warn!("WebSocket receiver lagged by {} messages for user {}", n, uid_for_task);
+                                                    // Continue receiving instead of disconnecting
+                                                    continue;
+                                                }
+                                                Err(broadcast::error::RecvError::Closed) => {
+                                                    info!("Broadcast channel closed for user {}", uid_for_task);
+                                                    break;
+                                                }
                                             }
                                         }
                                     });
                                 }
                                 Err(e) => {
+                                    warn!("WebSocket auth failed: {}", e);
                                     let error = WebSocketMessage::Error {
                                         code: "AUTH_FAILED".to_string(),
                                         message: e.to_string(),
@@ -197,18 +289,29 @@ pub async fn ws_handler(
                         Ok(WebSocketMessage::JoinChannel { channel_id }) => {
                             if let Some(uid) = user_id {
                                 // Verify user has access to channel
-                                if services.channels.is_member(&channel_id, &uid).await.unwrap_or(false) {
-                                    ws_server.subscribe_to_channel(channel_id, uid);
+                                match services.channels.is_member(&channel_id, &uid).await {
+                                    Ok(true) => {
+                                        ws_server.subscribe_to_channel(channel_id, uid);
+                                        info!("User {} subscribed to channel {}", uid, channel_id);
 
-                                    // Notify others in channel
-                                    if let Ok(user) = services.users.get_user(&uid).await {
-                                        let msg = WebSocketMessage::UserJoinedChannel {
-                                            channel_id,
-                                            user,
-                                        };
-                                        ws_server.broadcast_to_channel(&channel_id, &msg, Some(&uid));
+                                        // Notify others in channel
+                                        if let Ok(user) = services.users.get_user(&uid).await {
+                                            let msg = WebSocketMessage::UserJoinedChannel {
+                                                channel_id,
+                                                user,
+                                            };
+                                            ws_server.broadcast_to_channel(&channel_id, &msg, Some(&uid));
+                                        }
+                                    }
+                                    Ok(false) => {
+                                        warn!("User {} is not a member of channel {}", uid, channel_id);
+                                    }
+                                    Err(e) => {
+                                        warn!("Failed to check membership for user {} in channel {}: {}", uid, channel_id, e);
                                     }
                                 }
+                            } else {
+                                warn!("JoinChannel received but user is not authenticated");
                             }
                         }
 
@@ -281,20 +384,71 @@ pub async fn ws_handler(
                             }
                         }
 
-                        // WebRTC signaling - placeholders for now
-                        Ok(WebSocketMessage::WebRTCOffer { call_id: _, from_user_id: _, sdp: _ }) => {
-                            // Forward to all participants in the call
-                            // This would need call participant lookup
+                        // Join a call (WebSocket subscription for signaling)
+                        Ok(WebSocketMessage::JoinCall { call_id }) => {
+                            if let Some(uid) = user_id {
+                                ws_server.subscribe_to_call(call_id, uid);
+                                info!("User {} joined call {}", uid, call_id);
+                            }
                         }
 
-                        Ok(WebSocketMessage::WebRTCAnswer { call_id: _, from_user_id: _, sdp: _ }) => {
-                            // Forward to the caller
+                        // Leave a call
+                        Ok(WebSocketMessage::LeaveCall { call_id }) => {
+                            if let Some(uid) = user_id {
+                                ws_server.unsubscribe_from_call(&call_id, &uid);
+
+                                // Notify other participants
+                                let msg = WebSocketMessage::ParticipantLeft {
+                                    call_id,
+                                    user_id: uid,
+                                };
+                                ws_server.send_to_call_participants(&call_id, &msg, Some(&uid));
+                                info!("User {} left call {}", uid, call_id);
+                            }
                         }
 
-                        Ok(WebSocketMessage::WebRTCIceCandidate { call_id: _, from_user_id: _, candidate: _ }) => {
-                            // Forward to all participants
+                        // WebRTC Offer - Forward to all participants except sender
+                        Ok(WebSocketMessage::WebRTCOffer { call_id, from_user_id: _, sdp }) => {
+                            if let Some(uid) = user_id {
+                                let msg = WebSocketMessage::WebRTCOffer {
+                                    call_id,
+                                    from_user_id: uid,
+                                    sdp,
+                                };
+                                ws_server.send_to_call_participants(&call_id, &msg, Some(&uid));
+                                debug!("Forwarded WebRTC offer from {} in call {}", uid, call_id);
+                            }
                         }
 
+                        // WebRTC Answer - Forward to all participants except sender
+                        Ok(WebSocketMessage::WebRTCAnswer { call_id, from_user_id: _, sdp }) => {
+                            if let Some(uid) = user_id {
+                                let msg = WebSocketMessage::WebRTCAnswer {
+                                    call_id,
+                                    from_user_id: uid,
+                                    sdp,
+                                };
+                                ws_server.send_to_call_participants(&call_id, &msg, Some(&uid));
+                                debug!("Forwarded WebRTC answer from {} in call {}", uid, call_id);
+                            }
+                        }
+
+                        // WebRTC ICE Candidate - Forward to all participants except sender
+                        Ok(WebSocketMessage::WebRTCIceCandidate { call_id, from_user_id: _, candidate }) => {
+                            if let Some(uid) = user_id {
+                                let msg = WebSocketMessage::WebRTCIceCandidate {
+                                    call_id,
+                                    from_user_id: uid,
+                                    candidate,
+                                };
+                                ws_server.send_to_call_participants(&call_id, &msg, Some(&uid));
+                                debug!("Forwarded ICE candidate from {} in call {}", uid, call_id);
+                            }
+                        }
+
+                        Err(e) => {
+                            warn!("Failed to parse WebSocket message: {} | raw: {}", e, text);
+                        }
                         _ => {}
                     }
                 }

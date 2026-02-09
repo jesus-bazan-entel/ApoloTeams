@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { User, Team, Channel, Message, Notification } from '../types';
+import type { User, Team, Channel, Message, Notification, Call, Meeting } from '../types';
 
 interface AppState {
   // Auth
@@ -18,6 +18,20 @@ interface AppState {
   typingUsers: Record<string, User[]>;
   unreadCounts: Record<string, number>;
   notifications: Notification[];
+
+  // Call state
+  activeCall: Call | null;
+  incomingCall: Call | null;
+  isLocalAudioEnabled: boolean;
+  isLocalVideoEnabled: boolean;
+  localStream: MediaStream | null;
+  remoteStreams: Record<string, MediaStream>;
+  isCallMinimized: boolean;
+
+  // Meeting state
+  meetings: Meeting[];
+  selectedMeeting: Meeting | null;
+  showCreateMeetingModal: boolean;
 
   // UI
   loading: boolean;
@@ -38,12 +52,32 @@ interface AppState {
   addTypingUser: (channelId: string, user: User) => void;
   removeTypingUser: (channelId: string, userId: string) => void;
   setUnreadCount: (channelId: string, count: number) => void;
+  incrementUnread: (channelId: string) => void;
   clearUnread: (channelId: string) => void;
   setNotifications: (notifications: Notification[]) => void;
   addNotification: (notification: Notification) => void;
   markNotificationAsRead: (notificationId: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+
+  // Call actions
+  setActiveCall: (call: Call | null) => void;
+  setIncomingCall: (call: Call | null) => void;
+  setLocalAudioEnabled: (enabled: boolean) => void;
+  setLocalVideoEnabled: (enabled: boolean) => void;
+  setLocalStream: (stream: MediaStream | null) => void;
+  addRemoteStream: (peerId: string, stream: MediaStream) => void;
+  removeRemoteStream: (peerId: string) => void;
+  setCallMinimized: (minimized: boolean) => void;
+  resetCallState: () => void;
+
+  // Meeting actions
+  setMeetings: (meetings: Meeting[]) => void;
+  addMeeting: (meeting: Meeting) => void;
+  updateMeeting: (meeting: Meeting) => void;
+  removeMeeting: (meetingId: string) => void;
+  setSelectedMeeting: (meeting: Meeting | null) => void;
+  setShowCreateMeetingModal: (show: boolean) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -63,6 +97,20 @@ export const useStore = create<AppState>((set) => ({
   typingUsers: {},
   unreadCounts: {},
   notifications: [],
+
+  // Call state
+  activeCall: null,
+  incomingCall: null,
+  isLocalAudioEnabled: true,
+  isLocalVideoEnabled: true,
+  localStream: null,
+  remoteStreams: {},
+  isCallMinimized: false,
+
+  // Meeting state
+  meetings: [],
+  selectedMeeting: null,
+  showCreateMeetingModal: false,
 
   // UI
   loading: false,
@@ -111,10 +159,25 @@ export const useStore = create<AppState>((set) => ({
     })),
 
   addMessage: (channelId, message) =>
+    set((state) => {
+      const existing = state.messages[channelId] || [];
+      // Prevent duplicates (idempotent operation)
+      if (existing.some((m) => m.id === message.id)) {
+        return state;
+      }
+      return {
+        messages: {
+          ...state.messages,
+          [channelId]: [...existing, message],
+        },
+      };
+    }),
+
+  incrementUnread: (channelId: string) =>
     set((state) => ({
-      messages: {
-        ...state.messages,
-        [channelId]: [...(state.messages[channelId] || []), message],
+      unreadCounts: {
+        ...state.unreadCounts,
+        [channelId]: (state.unreadCounts[channelId] || 0) + 1,
       },
     })),
 
@@ -142,12 +205,19 @@ export const useStore = create<AppState>((set) => ({
     })),
 
   addTypingUser: (channelId, user) =>
-    set((state) => ({
-      typingUsers: {
-        ...state.typingUsers,
-        [channelId]: [...(state.typingUsers[channelId] || []), user],
-      },
-    })),
+    set((state) => {
+      const existing = state.typingUsers[channelId] || [];
+      // Prevent duplicates (idempotent operation)
+      if (existing.some((u) => u.id === user.id)) {
+        return state;
+      }
+      return {
+        typingUsers: {
+          ...state.typingUsers,
+          [channelId]: [...existing, user],
+        },
+      };
+    }),
 
   removeTypingUser: (channelId, userId) =>
     set((state) => ({
@@ -182,4 +252,51 @@ export const useStore = create<AppState>((set) => ({
     })),
   setLoading: (loading) => set({ loading }),
   setError: (error) => set({ error }),
+
+  // Call actions
+  setActiveCall: (call) => set({ activeCall: call }),
+  setIncomingCall: (call) => set({ incomingCall: call }),
+  setLocalAudioEnabled: (enabled) => set({ isLocalAudioEnabled: enabled }),
+  setLocalVideoEnabled: (enabled) => set({ isLocalVideoEnabled: enabled }),
+  setLocalStream: (stream) => set({ localStream: stream }),
+  addRemoteStream: (peerId, stream) =>
+    set((state) => ({
+      remoteStreams: { ...state.remoteStreams, [peerId]: stream },
+    })),
+  removeRemoteStream: (peerId) =>
+    set((state) => {
+      const newStreams = { ...state.remoteStreams };
+      delete newStreams[peerId];
+      return { remoteStreams: newStreams };
+    }),
+  setCallMinimized: (minimized) => set({ isCallMinimized: minimized }),
+  resetCallState: () =>
+    set({
+      activeCall: null,
+      incomingCall: null,
+      isLocalAudioEnabled: true,
+      isLocalVideoEnabled: true,
+      localStream: null,
+      remoteStreams: {},
+      isCallMinimized: false,
+    }),
+
+  // Meeting actions
+  setMeetings: (meetings) => set({ meetings }),
+  addMeeting: (meeting) =>
+    set((state) => ({
+      meetings: [...state.meetings, meeting].sort(
+        (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+      ),
+    })),
+  updateMeeting: (meeting) =>
+    set((state) => ({
+      meetings: state.meetings.map((m) => (m.id === meeting.id ? meeting : m)),
+    })),
+  removeMeeting: (meetingId) =>
+    set((state) => ({
+      meetings: state.meetings.filter((m) => m.id !== meetingId),
+    })),
+  setSelectedMeeting: (meeting) => set({ selectedMeeting: meeting }),
+  setShowCreateMeetingModal: (show) => set({ showCreateMeetingModal: show }),
 }));

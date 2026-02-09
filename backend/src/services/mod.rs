@@ -8,6 +8,7 @@ pub mod messages;
 pub mod files;
 pub mod calls;
 pub mod notifications;
+pub mod meetings;
 
 use sqlx::PgPool;
 use std::sync::Arc;
@@ -24,6 +25,7 @@ pub struct Services {
     pub files: files::FileService,
     pub calls: calls::CallService,
     pub notifications: notifications::NotificationService,
+    pub meetings: meetings::MeetingService,
 }
 
 impl Services {
@@ -40,6 +42,7 @@ impl Services {
             files: files::FileService::new(pool.clone(), config.clone()),
             calls: calls::CallService::new(pool.clone()),
             notifications: notifications::NotificationService::new(pool.clone()),
+            meetings: meetings::MeetingService::new(pool.clone()),
         }
     }
 }
