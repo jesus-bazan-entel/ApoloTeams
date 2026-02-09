@@ -202,6 +202,14 @@ impl ChannelService {
             .map_err(|e| AppError::DatabaseError(e.to_string()))
     }
 
+    /// Get just the user IDs of all channel members (no access check)
+    pub async fn get_member_user_ids(&self, channel_id: &Uuid) -> Result<Vec<Uuid>, AppError> {
+        let members = ChannelRepository::find_members(&self.pool, channel_id)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(members.into_iter().map(|m| m.user_id).collect())
+    }
+
     pub async fn list_members(
         &self,
         channel_id: &Uuid,

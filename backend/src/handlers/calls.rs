@@ -57,15 +57,28 @@ pub async fn start_call(
     let call_started_msg = WebSocketMessage::CallStarted { call: call.clone() };
 
     if is_direct_call {
-        // For direct calls, send directly to the target user (they may not be subscribed to channel yet)
+        // For direct calls, send directly to the target user
         if let Some(target_id) = target_user {
             info!("start_call: sending CallStarted to target user {} (direct call {})", target_id, call.id);
             ws_server.send_to_user(&target_id, &call_started_msg);
         }
     } else {
-        // For channel calls, broadcast to all channel subscribers except initiator
-        info!("start_call: broadcasting CallStarted to channel {} (call {})", call.channel_id, call.id);
-        ws_server.broadcast_to_channel(&call.channel_id, &call_started_msg, Some(&user_id));
+        // For channel calls, send to ALL channel members from DB (not just WS subscribers)
+        // because the callee may not have the channel open in their WebSocket
+        match services.channels.get_member_user_ids(&call.channel_id).await {
+            Ok(member_ids) => {
+                info!("start_call: sending CallStarted to {} channel members (call {})", member_ids.len(), call.id);
+                for member_id in &member_ids {
+                    if *member_id != user_id {
+                        ws_server.send_to_user(member_id, &call_started_msg);
+                    }
+                }
+            }
+            Err(e) => {
+                warn!("start_call: failed to get channel members, falling back to broadcast: {}", e);
+                ws_server.broadcast_to_channel(&call.channel_id, &call_started_msg, Some(&user_id));
+            }
+        }
     }
 
     Ok(HttpResponse::Created().json(call))
@@ -100,8 +113,8 @@ pub async fn join_call(
             call_id,
             participant: participant.clone(),
         };
-        info!("join_call: broadcasting ParticipantJoined for user {} to channel {} (call {})", user_id, call.channel_id, call_id);
-        ws_server.broadcast_to_channel(&call.channel_id, &msg, Some(&user_id));
+        info!("join_call: sending ParticipantJoined for user {} to call participants (call {})", user_id, call_id);
+        ws_server.send_to_call_participants(&call_id, &msg, Some(&user_id));
     } else {
         warn!("join_call: user {} not found in participants of call {}", user_id, call_id);
     }
@@ -118,18 +131,14 @@ pub async fn leave_call(
     let user_id = get_user_id_from_request(&req, &services)?;
     let call_id = path.into_inner();
 
-    // Get call info before leaving to know the channel_id
-    let call = services.calls.get_call(&call_id, &user_id).await?;
-    let channel_id = call.channel_id;
-
     services.calls.leave_call(&call_id, &user_id).await?;
 
-    // Notify other participants
+    // Notify other call participants
     let msg = WebSocketMessage::ParticipantLeft {
         call_id,
         user_id,
     };
-    ws_server.broadcast_to_channel(&channel_id, &msg, Some(&user_id));
+    ws_server.send_to_call_participants(&call_id, &msg, Some(&user_id));
 
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "message": "Left call successfully"
@@ -151,9 +160,13 @@ pub async fn end_call(
 
     services.calls.end_call(&call_id, &user_id).await?;
 
-    // Notify all channel members that the call has ended
+    // Notify all call participants that the call has ended
     let msg = WebSocketMessage::CallEnded { call_id };
+    ws_server.send_to_call_participants(&call_id, &msg, None);
+    // Also send to all channel members (callee may not have joined the call subscription)
     ws_server.broadcast_to_channel(&channel_id, &msg, None);
+    // Clean up call subscription
+    ws_server.remove_call(&call_id);
 
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "message": "Call ended successfully"

@@ -452,7 +452,10 @@ pub async fn ws_handler(
                         }
 
                         Err(e) => {
-                            warn!("Failed to parse WebSocket message: {} | raw: {}", e, text);
+                            // Ignore heartbeat pings sent as text
+                            if &*text != "ping" {
+                                warn!("Failed to parse WebSocket message: {} | raw: {}", e, text);
+                            }
                         }
                         _ => {}
                     }
